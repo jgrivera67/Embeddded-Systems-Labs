@@ -1,0 +1,9 @@
+/**
+ * embedded_debug.c - Embedded debugging facilities
+ *
+ * @author: German Rivera
+ */
+#include "embedded_debug.h"
+
+
+

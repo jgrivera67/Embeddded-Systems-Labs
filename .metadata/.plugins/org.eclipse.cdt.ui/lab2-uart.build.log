@@ -1,0 +1,7 @@
+22:01:10 **** Clean-only build of configuration Debug for project lab2-uart ****
+make clean 
+rm -rf  ./Sources/embedded_debug.o ./Sources/main.o  ./Project_Settings/Startup_Code/startup.o ./Project_Settings/Startup_Code/startup_MKL25Z4.o ./Project_Settings/Startup_Code/system_MKL25Z4.o  ./KSDK-components/Utilities/src/fsl_debug_console.o ./KSDK-components/Utilities/src/print_scan.o  ./KSDK-components/Board/board.o ./KSDK-components/Board/gpio_pins.o ./KSDK-components/Board/hardware_init.o ./KSDK-components/Board/pin_mux.o  ./Sources/embedded_debug.d ./Sources/main.d  ./Project_Settings/Startup_Code/startup.d ./Project_Settings/Startup_Code/system_MKL25Z4.d  ./KSDK-components/Utilities/src/fsl_debug_console.d ./KSDK-components/Utilities/src/print_scan.d  ./KSDK-components/Board/board.d ./KSDK-components/Board/gpio_pins.d ./KSDK-components/Board/hardware_init.d ./KSDK-components/Board/pin_mux.d  ./Project_Settings/Startup_Code/startup_MKL25Z4.d  lab2-uart.elf
+' '
+
+22:01:10 Build Finished (took 323ms)
+

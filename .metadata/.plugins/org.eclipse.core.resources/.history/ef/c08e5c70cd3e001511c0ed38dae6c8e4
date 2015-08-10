@@ -1,0 +1,31 @@
+/**
+ * assert.h - Assertion macros
+ *
+ *  @author: German Rivera
+ */
+#ifndef EMBEDDED_ASSERT_H_
+#define EMBEDDED_ASSERT_H_
+
+#include <fsl_debug_console.h>
+/**
+ * Macro to give a hint to the compiler for static branch prediction
+ */
+#define _INFREQUENTLY_TRUE_(_condition)	__builtin_expect((_condition), 0)
+
+/**
+ * Macro to check run-time assertions. If an assertion is false,
+ * execution is trapped in a tight infinite loop.
+ */
+#define ASSERT(_cond) \
+		do { 															\
+			if (_INFREQUENTLY_TRUE_(!(_cond))) { 						\
+				PRINTF("*** ASSERT failed in %s(): " __FILE__ ":%d: "   \
+				       #_cond "\n", __func__, __LINE__);				\
+																		\
+				/* TODO: Blink RGB LED in some distinctive pattern */	\
+				for ( ; ; )												\
+					;													\
+			}															\
+		} while (0)
+
+#endif /* EMBEDDED_ASSERT_H_ */

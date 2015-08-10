@@ -1,0 +1,36 @@
+ /*
+  * Embedded System Lab 2 - UART
+  */
+
+#include <fsl_device_registers.h>
+#include <board.h>
+#include <fsl_debug_console.h>
+#include "embedded_debug.h"
+
+int main(void)
+{
+
+    hardware_init();
+    dbg_uart_init();
+
+    /*
+     * TODO: This implementation of PRINTF has a problem. It does not
+     * handle '\n' correctly. It is supposed to print the CR, LF characters,
+     * not just the 'LF (\n). Fix the debug_putc() function, so that it
+     * considers '\n' as special case.
+     */
+    PRINTF("lab2 - UART: hello world\n");
+
+    /*
+     * TODO: Read characters from the UART and echo them back
+     */
+
+    ASSERT(false); //???
+    /*  Never leave main */
+    for ( ; ; ) {
+    }
+
+    ASSERT(false);
+    return 0;
+}
+
