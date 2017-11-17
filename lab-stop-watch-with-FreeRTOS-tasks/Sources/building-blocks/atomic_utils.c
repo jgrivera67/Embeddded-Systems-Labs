@@ -48,7 +48,9 @@ disable_cpu_interrupts(void)
         __disable_irq();
         __ISB();
 
+#if 0 // ??? TODO
         g_interrupts_disabled_stats.start_cycles_interrupts_disabled = get_cpu_clock_cycles();
+#endif
     }
 
     return old_primask;
@@ -64,9 +66,12 @@ disable_cpu_interrupts(void)
  void
 restore_cpu_interrupts(uint32_t old_primask)
 {
+#if 0 // ??? TODO
     void *return_address = __builtin_return_address(0);
+#endif
 
     if (__CPU_INTERRUPTS_ARE_ENABLED(old_primask)) {
+#if 0 // ??? TODO
         uint32_t end_cycles;
         uint32_t delta_cycles;
 
@@ -77,7 +82,7 @@ restore_cpu_interrupts(uint32_t old_primask)
         	g_interrupts_disabled_stats.max_cycles_interrupts_disabled = delta_cycles;
         	g_interrupts_disabled_stats.longest_interrupts_disabled_code_addr = GET_CALL_ADDRESS(return_address);
         }
-
+#endif
         __ISB();
         __enable_irq();
     }

@@ -7063,6 +7063,7 @@ typedef struct {
   __I  uint8_t FPROT0;                             /**< Non-volatile P-Flash Protection 0 - High Register, offset: 0xB */
   __I  uint8_t FSEC;                               /**< Non-volatile Flash Security Register, offset: 0xC */
   __I  uint8_t FOPT;                               /**< Non-volatile Flash Option Register, offset: 0xD */
+  __I  uint16_t padding;
 } NV_Type;
 
 /* ----------------------------------------------------------------------------

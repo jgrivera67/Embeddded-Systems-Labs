@@ -19,6 +19,7 @@
 #include "compile_time_checks.h"
 #include "runtime_checks.h"
 #include "mem_utils.h"
+#include "memory_protection_unit.h"
 
 /**
  * For FreeRTOS, lower number means lower priority.
@@ -34,6 +35,11 @@ C_ASSERT(HIGHEST_APP_TASK_PRIORITY > LOWEST_APP_TASK_PRIORITY);
 #define APP_TASK_STACK_SIZE UINT32_C(256)
 
 C_ASSERT(APP_TASK_STACK_SIZE >= configMINIMAL_STACK_SIZE);
+
+/**
+ * application task default stack size in bytes
+ */
+#define APP_TASK_STACK_SIZE_BYTES (APP_TASK_STACK_SIZE * sizeof(uint32_t))
 
 /**
  * Number of milliseconds per RTOS timer tick
@@ -54,13 +60,23 @@ C_ASSERT(APP_TASK_STACK_SIZE >= configMINIMAL_STACK_SIZE);
  */
 struct rtos_task
 {
+    /**
+     * Task's stack (must be the first field of the structure)
+     */
+    StackType_t tsk_stack[APP_TASK_STACK_SIZE];
+
 #   define      TASK_SIGNATURE  GEN_SIGNATURE('T', 'A', 'S', 'K')
     uint32_t    tsk_signature;
 
     /**
+     * Task control block
+     */
+    StaticTask_t tsk_tcb;
+
+    /**
      * FreeRTOS task handle
      */
-    xTaskHandle  tsk_handle;
+    TaskHandle_t tsk_handle;
 
     /**
      * Pointer to task name
@@ -72,20 +88,17 @@ struct rtos_task
      */
     volatile bool tsk_created;
 
-    uint32_t    tsk_stack_overflow_marker;
-
-    /**
-     * Task's stack
-     */
-    StackType_t tsk_stack[APP_TASK_STACK_SIZE];
-
-    uint32_t    tsk_stack_underflow_marker;
-
     /**
      * Maximum number of stack entries used (high water mark)
      */
     uint16_t tsk_max_stack_entries_used;
-};
+
+    /**
+     * Saved state of thread-specific MPU region descriptors
+     */
+    struct thread_regions tsk_mpu_regions;
+
+} __attribute__ ((aligned(2*APP_TASK_STACK_SIZE_BYTES)));
 
 /**
  * Wrapper for an RTOS mutex object
@@ -152,6 +165,8 @@ void rtos_task_create(struct rtos_task *rtos_task_p,
                       rtos_task_function_t *task_function_p,
                       void *task_arg_p,
                       rtos_task_priority_t task_prio);
+
+struct rtos_task *rtos_task_get_current(void);
 
 struct rtos_task *rtos_task_self(void);
 

@@ -101,7 +101,7 @@ SECTIONS
     . = ALIGN(MPU_REGION_ALIGNMENT);
     __secret_flash_text_end = .;
     __flash_text_start = .;
-    
+
     *(.text)                 /* .text sections (code) */
     *(.text*)                /* .text* sections (code) */
     *(.rodata)               /* .rodata sections (constants, strings, etc.) */
@@ -111,7 +111,7 @@ SECTIONS
     *(.eh_frame)
     KEEP (*(.init))
     KEEP (*(.fini))
-    
+
     . = ALIGN(MPU_REGION_ALIGNMENT);
     __flash_text_end = .;
   } > m_text
@@ -233,7 +233,7 @@ SECTIONS
     . = ALIGN(MPU_REGION_ALIGNMENT);
     __secret_data_area_end = .;
     __background_data_region_start = .;
-    
+
     __DATA_RAM = .;
     __data_start__ = .;      /* create a global symbol at data start */
     *(.data)                 /* .data sections */
@@ -275,6 +275,7 @@ SECTIONS
     . = ALIGN(MPU_REGION_ALIGNMENT);
     __bss_end__ = .;
     __END_BSS = .;
+
   } > m_data
 
   .heap :
@@ -290,11 +291,9 @@ SECTIONS
 
   .stack :
   {
-    . = ALIGN(MPU_REGION_ALIGNMENT);
-    __interrupt_stack_start = .;
+    /* To be its own MPU region, the stack start address must be a multiple of the stack size */
+    . = ALIGN(STACK_SIZE);
     . += STACK_SIZE;
-    . = ALIGN(MPU_REGION_ALIGNMENT);
-    __interrupt_stack_end = .;
   } > m_data
 
   m_usb_bdt (NOLOAD) :
@@ -308,8 +307,9 @@ SECTIONS
     *(m_usb_global)
   } > m_usb_sram
 
-  /* Initializes stack on the end of block */
-  __StackTop   = ORIGIN(m_data) + LENGTH(m_data);
+    /* Initializes stack on the end of block */
+  __sram_end = ORIGIN(m_data) + LENGTH(m_data);
+  __StackTop   = __sram_end;
   __StackLimit = __StackTop - STACK_SIZE;
   PROVIDE(__stack = __StackTop);
 

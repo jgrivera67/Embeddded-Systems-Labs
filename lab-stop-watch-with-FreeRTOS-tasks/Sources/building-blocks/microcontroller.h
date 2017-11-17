@@ -136,7 +136,11 @@
 /**
  * Memory protection unit (MPU) region alignment in bytes
  */
+#if __CORTEX_M >= 0x03
 #define MPU_REGION_ALIGNMENT	UINT32_C(32)
+#else
+#define MPU_REGION_ALIGNMENT	UINT32_C(256)
+#endif
 
 /*
  * CPU reset causes

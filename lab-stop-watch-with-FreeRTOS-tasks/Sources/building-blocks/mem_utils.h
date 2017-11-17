@@ -11,12 +11,16 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifndef ARRAY_SIZE
 #define ARRAY_SIZE(_array) \
         (sizeof(_array) / sizeof((_array)[0]))
+#endif
 
 #define HOW_MANY(_m, _n)    (((size_t)(_m) - 1) / (_n) + 1)
 
 #define ROUND_UP(_m, _n)    (HOW_MANY(_m, _n) * (_n))
+
+#define ROUND_DOWN(_m, _n)    (((_m) / (_n)) * (_n))
 
 /**
  * Given pointer to a struct '_enclosed_struc_p' that is contained in

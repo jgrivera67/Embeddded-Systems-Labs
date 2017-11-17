@@ -10,21 +10,48 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include "microcontroller.h"
+
+#if __MPU_PRESENT == 1
+#define REGION_ALIGNMENT(_type)		ROUND_UP_TO_POWER_OF_2(sizeof(_type))
+
+#define ROUND_UP_TO_POWER_OF_2(_x) \
+           ((_x) <= 32 ? 32 :                              \
+            ((_x) <= 64 ? 64 :                             \
+             ((_x) <= 128 ? 128 :                          \
+              ((_x) <= 256 ? 256 :                         \
+               ((_x) <= 512 ? 512 :                        \
+                ((_x) <= 1024 ? 1024 :                     \
+                 ((_x) <= (2*1024) ? (2*1024) :            \
+                  ((_x) <= (4*1024) ? (4*1024) :           \
+                   ((_x) <= (8*1024) ? (8*1024) :          \
+                    ((_x) <= (16*1024) ? (16*1024) :  	   \
+                     ((_x) <= (32*1024) ? (32*1024) :      \
+                      ((_x) <= (64*1024) ? (64*1024) :     \
+                       ((_x) <= (128*1024) ? (128*1024) :  \
+                        ((_x) <= (256*1024) ? (256*1024) : \
+                         (512*1024)))))))))))))))
+
+#else
+#define REGION_ALIGNMENT(_type)		MPU_REGION_ALIGNMENT
+#endif
 
 /**
  * MPU regions assignment
  */
 enum mpu_region_id {
-	GLOBAL_BACKGROUND_DATA_REGION = 0,
-	GLOBAL_FLASH_CODE_REGION,
-    GLOBAL_RAM_CODE_REGION,
-    GLOBAL_INTERRUPT_STACK_REGION,
-    THREAD_STACK_DATA_REGION,
-    PRIVATE_DATA_REGION,
-    PRIVATE_CODE_REGION,
-	/* New regions need be added above this line */
-	NUM_MPU_REGIONS
+    GLOBAL_BACKGROUND_DATA_REGION = 0,
+    GLOBAL_FLASH_CODE_REGION = 1,
+    GLOBAL_RAM_CODE_REGION = 2,
+    GLOBAL_INTERRUPT_STACK_REGION = 3,
+    GLOBAL_MPU_IO_REGION = 4,
+    THREAD_STACK_DATA_REGION = 5,
+    PRIVATE_DATA_REGION = 6,
+    PRIVATE_CODE_REGION = 7,
+
+    /* If additional regions are necessary, they must be defined above */
+    MAX_NUM_MPU_REGIONS
 };
 
 /**
@@ -62,9 +89,22 @@ enum data_region_permissions {
 
 void mpu_init(void);
 
-void mpu_disable(void);
+bool mpu_disable(void);
 
 void mpu_enable(void);
+
+/**
+ * Initializes the thread-private MPU region descriptors
+ *
+ * NOTE: This function is to be invoked only from the RTOS
+ * code that initializes the context of a thread before it is
+ * switched in. The first time that the thread is context-switch-in,
+ * the corresponding actual MPU region descriptors will be loaded with
+ * the values set here.
+ */
+void initialize_thread_mpu_regions(void *stack_base_addr,
+		                           size_t stack_size,
+								   struct thread_regions *thread_regions_p);
 
 /**
  * Restore thread-private MPU regions
@@ -82,15 +122,13 @@ void restore_thread_mpu_regions(const struct thread_regions *thread_regions_p);
  */
 void save_thread_mpu_regions(struct thread_regions *thread_regions_p);
 
-void set_cpu_writable_background_region(bool enabled);
-
-bool set_cpu_writable_background_region(bool enabled);
+bool set_writable_background_region(bool enabled);
 
 bool is_mpu_enabled(void);
 
-void restore_private_code_region(struct mpu_region_descriptor saved_region);
+void restore_private_code_region(const struct mpu_region_descriptor *saved_region_p);
 
-void restore_private_data_region(struct mpu_region_descriptor saved_region);
+void restore_private_data_region(const struct mpu_region_descriptor *saved_region_p);
 
 void set_private_code_region_no_save(void *first_addr, void *last_addr);
 

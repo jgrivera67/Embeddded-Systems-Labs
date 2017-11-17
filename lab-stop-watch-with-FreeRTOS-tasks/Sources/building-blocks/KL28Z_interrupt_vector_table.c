@@ -12,33 +12,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/*
- * Variable representing the bottom of the stack used by the reset exception
- * handler.
- * It is defined in the linker script  as __StackTop as it corresponds to the
- *  initial top of the stack upon reset.
- */
-extern uint32_t __StackTop[];
-
 /**
  * Default Non Maskable Interrupt exception handler
  */
 void NMI_Handler(void)
-{
-	D_ASSERT(false);
-
-	/*
-	 * Trap the processor in a dummy infinite loop
-	 */
-	for ( ; ; )
-		;
-}
-
-
-/**
- * Default Hard fault exception handler
- */
-void HardFault_Handler(void)
 {
 	D_ASSERT(false);
 
@@ -214,5 +191,6 @@ static const NV_Type nv_cfmconfig __attribute__ ((section(".FlashConfig"))) = {
     .FPROT1 = 0xff,
     .FPROT0 = 0xff,
     .FSEC = 0xfe,
-    .FOPT = 0xff,
+    .FOPT = 0x3d,
+	.padding = 0xffff
 };

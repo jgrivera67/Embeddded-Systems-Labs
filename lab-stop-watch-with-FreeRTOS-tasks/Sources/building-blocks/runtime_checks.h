@@ -21,7 +21,9 @@
 
 #ifndef NDEBUG
 
+#ifndef DEBUG
 #define DEBUG
+#endif
 
 /**
  * Macro to check debug-only assertions
@@ -73,9 +75,7 @@ void debug_assert_failure(const char *cond_str, const char *func_name,
         (((uintptr_t)(_io_addr) >= MCU_PERIPHERAL_BRIDGE_MIN_ADDR &&    \
           (uintptr_t)(_io_addr) <= MCU_PERIPHERAL_BRIDGE_MAX_ADDR) ||   \
          ((uintptr_t)(_io_addr) >= MCU_PRIVATE_PERIPHERALS_MIN_ADDR &&  \
-          (uintptr_t)(_io_addr) <= MCU_PRIVATE_PERIPHERALS_MAX_ADDR) || \
-         ((uintptr_t)(_io_addr) >= MCU_MTB_MIN_ADDR &&                  \
-          (uintptr_t)(_io_addr) <= MCU_MTB_MAX_ADDR))
+          (uintptr_t)(_io_addr) <= MCU_PRIVATE_PERIPHERALS_MAX_ADDR))
 
 /**
  * Check that an address is in flash memory and it is not address 0x0
@@ -120,10 +120,19 @@ enum device_states {
 	DEVICE_BROKEN = 0x2
 };
 
+void emergency_printf(const char  *fmt_s, ...);
+
 error_t capture_error(const char *error_description,
                       uintptr_t arg1,
                       uintptr_t arg2);
 
 void fatal_error_handler(error_t error);
+
+struct rtos_task;
+
+void print_stack_trace(uint_fast8_t num_entries_to_skip,
+		               const void *start_pc,
+					   const void *start_frame_pointer,
+		               const struct rtos_task *task_p);
 
 #endif /* SOURCES_BUILDING_BLOCKS_RUNTIME_CHECKS_H_ */

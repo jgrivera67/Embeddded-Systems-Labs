@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 #include "runtime_checks.h"
-#include <MKL25Z4.h>
+#include <MKL28Z7.h>
 
 /**
  *  Default UART transmission mode: 8-bits, no-parity, 1 stop bit
@@ -24,11 +24,7 @@ struct uart_device {
 #   define UART_DEVICE_SIGNATURE  GEN_SIGNATURE('U', 'A', 'R', 'T')
     uint32_t urt_signature;
     struct uart_device_var *urt_var_p;
-    union {
-        UART0_Type *urt_mmio_uart0_p;
-        UART_Type *urt_mmio_uart_p;
-    };
-
+    LPUART_Type *urt_mmio_uart_p;
     volatile uint32_t *urt_mmio_tx_port_pcr_p;
     volatile uint32_t *urt_mmio_rx_port_pcr_p;
     uint32_t urt_mmio_pin_mux_selector_mask;

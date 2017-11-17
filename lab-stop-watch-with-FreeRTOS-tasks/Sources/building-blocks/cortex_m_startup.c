@@ -14,7 +14,11 @@
 #include "time_utils.h"
 #include "watchdog.h"
 #include "runtime_log.h"
+#if 0 // TODO
 #include "system_clocks.h"
+#else
+#include "clock_config.h"
+#endif
 #include <stdint.h>
 
 extern void __libc_init_array(void); /* function provided by libc */
@@ -105,8 +109,9 @@ void Reset_Handler(void)
     /*
      * Initialize system clocks:
      */
+#if 0 // TODO
     system_clocks_init();
-
+#endif
     /*
      * Initialize CPU cycle counter used to measure execution time:
      */
@@ -148,7 +153,9 @@ void Reset_Handler(void)
      * Restart wathdog timer to prevent a reset before the RTOS idle task gets
      * the chance to run. (The idle task restarts the watchdog timer)
      */
+#if 0 //???
     watchdog_restart();
+#endif
 
     /*
      * Re-enable interrupts at the CPU:
@@ -186,9 +193,6 @@ uint32_t get_starup_time_us(void)
  */
 uint32_t get_flash_used(void)
 {
-    extern uint32_t __etext[];
-    extern uint32_t __data_start__[];
-    extern uint32_t __data_end__[];
     uintptr_t initializers_size = __data_end__ - __data_start__;
 
     D_ASSERT((uintptr_t)__etext <= MCU_FLASH_BASE_ADDR + MCU_FLASH_SIZE);
@@ -206,10 +210,6 @@ uint32_t get_flash_used(void)
  */
 uint32_t get_sram_used(void)
 {
-    extern uint32_t __bss_end__[];
-    extern uint32_t __StackTop[];
-    extern uint32_t __StackLimit[];
-
     D_ASSERT(__bss_end__ <= __StackLimit);
     D_ASSERT(__StackLimit < __StackTop);
 

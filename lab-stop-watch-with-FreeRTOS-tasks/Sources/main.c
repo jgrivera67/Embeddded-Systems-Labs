@@ -10,8 +10,15 @@
 #include <building-blocks/runtime_checks.h>
 #include <building-blocks/compile_time_checks.h>
 #include <building-blocks/rtos_wrapper.h>
+#include <building-blocks/memory_protection_unit.h>
 #include <stddef.h>
 #include <ctype.h>
+
+//???
+#include "fsl_debug_console.h"
+#include "board.h"
+#include "pin_mux.h"
+//???
 
 /**
  * stopwatch buttons polling period in milliseconds
@@ -30,7 +37,7 @@ C_ASSERT(UPDATE_STOPWATCH_PERIOD_MS % POLL_STOPWATCH_BUTTONS_PERIOD_MS == 0);
  */
 #define SECONDS_CHANGED_MASK	0x1
 #define MINUTES_CHANGED_MASK	0x2
-#define HOURS_CHANGED_MASK		0x4
+#define HOURS_CHANGED_MASK	0x4
 
 /**
  * State variables of a stopwatch object
@@ -61,6 +68,7 @@ struct task_params {
  */
 static struct rtos_task g_stop_watch_buttons_reader_task;
 static struct rtos_task g_stop_watch_updater_task;
+static struct rtos_task g_console_task;
 
 static void update_stopwatch_display(uint32_t update_mask)
 {
@@ -91,10 +99,14 @@ static void update_stopwatch_display(uint32_t update_mask)
  */
 static void reset_stopwatch(void)
 {
+	struct mpu_region_descriptor old_region;
+
+    //set_private_data_region(&g_stopwatch, sizeof(g_stopwatch), READ_WRITE, &old_region);
 	g_stopwatch.hours = 0;
     g_stopwatch.minutes = 0;
 	g_stopwatch.seconds = 0;
 	g_stopwatch.milliseconds = 0;
+    restore_private_data_region(&old_region);
 	update_stopwatch_display(HOURS_CHANGED_MASK | MINUTES_CHANGED_MASK | SECONDS_CHANGED_MASK);
 }
 
@@ -127,15 +139,18 @@ static void init_stopwatch(void)
 static void read_stopwatch_buttons(void)
 {
 	int c;
+	struct mpu_region_descriptor old_region;
 
 	c = console_getchar_non_blocking();
 	c = tolower(c);
+    set_private_data_region(&g_stopwatch, sizeof(g_stopwatch), READ_WRITE, &old_region);
 	if (c == 's') {
 		g_stopwatch.running = !g_stopwatch.running;
 	} else if (c == 'r') {
 		reset_stopwatch();
 		g_stopwatch.running = true;
 	}
+    restore_private_data_region(&old_region);
 }
 
 /**
@@ -146,8 +161,10 @@ static void read_stopwatch_buttons(void)
 static void update_stopwatch(void)
 {
 	uint32_t update_mask = 0;
+	struct mpu_region_descriptor old_region;
 
 	D_ASSERT(g_stopwatch.running);
+    set_private_data_region(&g_stopwatch, sizeof(g_stopwatch), READ_WRITE, &old_region);
     g_stopwatch.milliseconds += 100;
     if (g_stopwatch.milliseconds == 1000) {
         g_stopwatch.milliseconds = 0;
@@ -168,6 +185,7 @@ static void update_stopwatch(void)
 		}
 	}
 
+    restore_private_data_region(&old_region);
 	update_stopwatch_display(update_mask);
 }
 
@@ -205,13 +223,23 @@ static void stop_watch_updater_task_func(void *arg)
 
 int main(void)
 {
+	BOARD_BootClockRUN();
+    mpu_init();
     rtos_init();
 
 	/*
 	 * Initialize devices used:
 	 */
+#if 0 // TODO
+    mpu_enable();
 	pin_config_init();
-	console_init();
+#else
+	BOARD_InitPins();
+	BOARD_InitDebugConsole();
+    mpu_enable();
+#endif
+
+	console_init(&g_console_task);
 
 	/*
 	 * Display greeting:
@@ -245,3 +273,4 @@ int main(void)
     D_ASSERT(false);
     return 1;
 }
+

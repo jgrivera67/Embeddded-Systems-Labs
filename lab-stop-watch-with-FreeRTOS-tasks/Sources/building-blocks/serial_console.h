@@ -21,7 +21,12 @@
 #define CONSOLE_ATTR_BLINK         0x4
 #define CONSOLE_ATTR_REVERSE       0x8
 
-void console_init(void);
+/*
+ * Incomplete struct declarations to avoid includes
+ */
+struct rtos_task;
+
+void console_init(struct rtos_task *console_output_task_p);
 
 void console_lock(void);
 

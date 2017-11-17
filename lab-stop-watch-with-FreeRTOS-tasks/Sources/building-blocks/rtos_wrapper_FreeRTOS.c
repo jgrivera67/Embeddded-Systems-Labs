@@ -7,13 +7,14 @@
  */
 
 #include "rtos_wrapper.h"
-#include "serial_console.h"
 #include "atomic_utils.h"
 #include "mem_utils.h"
 #include "microcontroller.h"
-#include "hw_timer_driver.h"
 #include "runtime_log.h"
 #include <stddef.h>
+#include "memory_protection_unit.h"
+
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
 
 /**
  * Available stack space left when the stack is considered at risk of stack
@@ -33,6 +34,12 @@ static volatile uint8_t g_nested_ISR_count = 0;
 static BaseType_t g_rtos_task_context_switch_required = pdFALSE;
 
 /**
+ * saved writable state for the global background data region, for each possible
+ * interrupted context for nested interrupts.
+ */
+static bool g_interrupted_background_region_writable_state[MCU_NUM_INTERRUPT_PRIORITIES];
+
+/**
  * Initializes RTOS
  */
 void rtos_init(void)
@@ -45,6 +52,7 @@ void rtos_init(void)
  */
 void rtos_scheduler_start(void)
 {
+    (void)set_writable_background_region(true);
     vTaskStartScheduler();
 
     /*Unreachable*/
@@ -57,9 +65,14 @@ void rtos_scheduler_start(void)
  */
 void rtos_enter_isr(void)
 {
+	D_ASSERT(CPU_INTERRUPTS_ARE_ENABLED());
+
+	bool old_writable = set_writable_background_region(true);
     uint_fast8_t prev_nested_ISR_count = ATOMIC_POST_INCREMENT_UINT8(&g_nested_ISR_count);
 
-    D_ASSERT(prev_nested_ISR_count < UINT8_MAX);
+    D_ASSERT(prev_nested_ISR_count < MCU_NUM_INTERRUPT_PRIORITIES);
+    g_interrupted_background_region_writable_state[prev_nested_ISR_count] = old_writable;
+    (void)set_writable_background_region(false);
 }
 
 
@@ -68,13 +81,20 @@ void rtos_enter_isr(void)
  */
 void rtos_exit_isr(void)
 {
+	D_ASSERT(CPU_INTERRUPTS_ARE_ENABLED());
+
+	bool old_writable = set_writable_background_region(true);
     uint_fast8_t prev_nested_ISR_count = ATOMIC_POST_DECREMENT_UINT8(&g_nested_ISR_count);
 
+    D_ASSERT(!old_writable);
     D_ASSERT(prev_nested_ISR_count >= 1);
     if (prev_nested_ISR_count == 1) {
         portEND_SWITCHING_ISR(g_rtos_task_context_switch_required);
         g_rtos_task_context_switch_required = pdFALSE;
     }
+
+    (void)set_writable_background_region(
+    	g_interrupted_background_region_writable_state[prev_nested_ISR_count - 1]);
 }
 
 
@@ -87,8 +107,10 @@ void rtos_task_create(struct rtos_task *rtos_task_p,
                       void *task_arg_p,
                       rtos_task_priority_t task_prio)
 {
-    BaseType_t rtos_status;
     error_t error;
+	struct mpu_region_descriptor old_region;
+	bool old_write_enabled;
+
 
     D_ASSERT(rtos_task_p != NULL);
     D_ASSERT(!rtos_task_p->tsk_created);
@@ -96,6 +118,7 @@ void rtos_task_create(struct rtos_task *rtos_task_p,
     D_ASSERT(task_prio >= LOWEST_APP_TASK_PRIORITY &&
              task_prio <= HIGHEST_APP_TASK_PRIORITY);
 
+    set_private_data_region(rtos_task_p, sizeof(*rtos_task_p), READ_WRITE, &old_region);
     rtos_task_p->tsk_signature = TASK_SIGNATURE;
     rtos_task_p->tsk_name_p = task_name_p;
     rtos_task_p->tsk_created = true;
@@ -104,28 +127,38 @@ void rtos_task_create(struct rtos_task *rtos_task_p,
     /*
      * Create the FreeRTOS task:
      */
-    TaskParameters_t task_params = {
-		.pvTaskCode = task_function_p,
-    	.pcName = task_name_p,
-		.usStackDepth = APP_TASK_STACK_SIZE,
-		.pvParameters = task_arg_p,
-    	.uxPriority = task_prio,
-    	.puxStackBuffer = rtos_task_p->tsk_stack,
-    };
+    old_write_enabled = set_writable_background_region(true);
+    rtos_task_p->tsk_handle = xTaskCreateStatic(task_function_p,
+    											task_name_p,
+												APP_TASK_STACK_SIZE,
+												task_arg_p,
+												task_prio,
+												rtos_task_p->tsk_stack,
+												&rtos_task_p->tsk_tcb);
 
-    rtos_status = xTaskCreateRestricted(&task_params,
-    		                            &rtos_task_p->tsk_handle);
-
-    if (rtos_status != pdPASS) {
-        error = CAPTURE_ERROR("xTaskCreate() failed", rtos_status, rtos_task_p);
+    if (rtos_task_p->tsk_handle == NULL) {
+        error = CAPTURE_ERROR("xTaskCreate() failed", rtos_task_p, task_name_p);
         fatal_error_handler(error);
     }
 
-    D_ASSERT(rtos_task_p->tsk_handle != NULL);
-
     vTaskSetApplicationTaskTag(rtos_task_p->tsk_handle, (void *)rtos_task_p);
+    (void)set_writable_background_region(old_write_enabled);
 }
 
+
+/**
+ * Returns that pointer to the current task
+ *
+ * @return task object pointer
+ */
+struct rtos_task *rtos_task_get_current(void)
+{
+    TaskHandle_t task_handle = xTaskGetCurrentTaskHandle();
+    struct rtos_task *task_p = (void *)xTaskGetApplicationTaskTag(task_handle);
+
+    D_ASSERT(task_p->tsk_signature == TASK_SIGNATURE);
+    return task_p;
+}
 
 /**
  * Returns that pointer to the calling task
@@ -141,11 +174,7 @@ struct rtos_task *rtos_task_self(void)
         return NULL;
     }
 
-    TaskHandle_t task_handle = xTaskGetCurrentTaskHandle();
-    struct rtos_task *task_p = (void *)xTaskGetApplicationTaskTag(task_handle);
-
-    D_ASSERT(task_p->tsk_signature == TASK_SIGNATURE);
-    return task_p;
+    return rtos_task_get_current();
 }
 
 
@@ -178,7 +207,7 @@ void rtos_task_delay(uint32_t ms)
 void rtos_task_semaphore_wait(void)
 {
     error_t error = CAPTURE_ERROR("function not supported for FreeRTOS", rtos_task_semaphore_wait, 0);
-
+    /* TODO: Implement this using ulTaskNotifyTake() */
     fatal_error_handler(error);
 }
 
@@ -190,6 +219,7 @@ void rtos_task_semaphore_signal(struct rtos_task *rtos_task_p)
 {
     error_t error = CAPTURE_ERROR("function not supported for FreeRTOS" , rtos_task_semaphore_signal, 0);
 
+    /* TODO: Implement this using ulTaskNotifyGive() */
     fatal_error_handler(error);
 }
 
@@ -200,12 +230,19 @@ void rtos_task_semaphore_signal(struct rtos_task *rtos_task_p)
 void rtos_mutex_init(struct rtos_mutex *rtos_mutex_p,
                      const char *mutex_name_p)
 {
+	struct mpu_region_descriptor old_region;
+
     D_ASSERT(rtos_mutex_p != NULL);
+    set_private_data_region(rtos_mutex_p, sizeof(*rtos_mutex_p), READ_WRITE, &old_region);
     rtos_mutex_p->mtx_signature = MUTEX_SIGNATURE;
     rtos_mutex_p->mtx_name = mutex_name_p;
 
+    bool old_writable = set_writable_background_region(true);
     rtos_mutex_p->mtx_os_mutex = xSemaphoreCreateMutex();
+    (void)set_writable_background_region(old_writable);
+
     D_ASSERT(rtos_mutex_p->mtx_os_mutex != NULL);
+    restore_private_data_region(&old_region);
 }
 
 
@@ -220,7 +257,10 @@ void rtos_mutex_lock(struct rtos_mutex *rtos_mutex_p)
     D_ASSERT(rtos_mutex_p->mtx_signature == MUTEX_SIGNATURE);
     D_ASSERT(CALLER_IS_THREAD() && CPU_INTERRUPTS_ARE_ENABLED());
 
+	bool old_writable = set_writable_background_region(true);
     rtos_status = xSemaphoreTake(rtos_mutex_p->mtx_os_mutex, portMAX_DELAY);
+    (void)set_writable_background_region(old_writable);
+
     if (rtos_status != pdPASS) {
         error = CAPTURE_ERROR("xSemaphoreTake() failed", rtos_status, rtos_mutex_p);
         fatal_error_handler(error);
@@ -239,7 +279,10 @@ void rtos_mutex_unlock(struct rtos_mutex *rtos_mutex_p)
     D_ASSERT(rtos_mutex_p->mtx_signature == MUTEX_SIGNATURE);
     D_ASSERT(CALLER_IS_THREAD());
 
+	bool old_writable = set_writable_background_region(true);
     rtos_status = xSemaphoreGive(rtos_mutex_p->mtx_os_mutex);
+    (void)set_writable_background_region(old_writable);
+
     if (rtos_status != pdPASS) {
         error = CAPTURE_ERROR("xSemaphoreGive() failed", rtos_status, rtos_mutex_p);
         fatal_error_handler(error);
@@ -268,18 +311,20 @@ void rtos_semaphore_init(struct rtos_semaphore *rtos_semaphore_p,
                          const char *semaphore_name_p,
                          uint32_t initial_count)
 {
-    uint32_t max_count;
+	bool old_writable = set_writable_background_region(true);
 
     D_ASSERT(rtos_semaphore_p != NULL);
     rtos_semaphore_p->sem_signature = SEMAPHORE_SIGNATURE;
     rtos_semaphore_p->sem_name = semaphore_name_p;
     if (initial_count == 0) {
-        max_count = 1;
+		rtos_semaphore_p->sem_os_semaphore = xSemaphoreCreateBinary();
     } else {
-        max_count = initial_count;
+		rtos_semaphore_p->sem_os_semaphore =
+			xSemaphoreCreateCounting(initial_count, initial_count);
     }
 
-    rtos_semaphore_p->sem_os_semaphore = xSemaphoreCreateCounting(max_count, initial_count);
+    (void)set_writable_background_region(old_writable);
+
     D_ASSERT(rtos_semaphore_p->sem_os_semaphore != NULL);
 }
 
@@ -295,7 +340,10 @@ void rtos_semaphore_wait(struct rtos_semaphore *rtos_semaphore_p)
     D_ASSERT(rtos_semaphore_p->sem_signature == SEMAPHORE_SIGNATURE);
     D_ASSERT(CALLER_IS_THREAD() && CPU_INTERRUPTS_ARE_ENABLED());
 
+	bool old_writable = set_writable_background_region(true);
     rtos_status = xSemaphoreTake(rtos_semaphore_p->sem_os_semaphore, portMAX_DELAY);
+    (void)set_writable_background_region(old_writable);
+
     if (rtos_status != pdPASS) {
         error = CAPTURE_ERROR("xSemaphoreTake() failed", rtos_status, rtos_semaphore_p);
         fatal_error_handler(error);
@@ -320,8 +368,11 @@ bool rtos_semaphore_wait_timeout(struct rtos_semaphore *rtos_semaphore_p,
     D_ASSERT(rtos_semaphore_p->sem_signature == SEMAPHORE_SIGNATURE);
     D_ASSERT(CALLER_IS_THREAD() && CPU_INTERRUPTS_ARE_ENABLED());
 
+	bool old_writable = set_writable_background_region(true);
     rtos_status = xSemaphoreTake(rtos_semaphore_p->sem_os_semaphore,
                                  timeout_ms / MS_PER_TIMER_TICK);
+    (void)set_writable_background_region(old_writable);
+
     return rtos_status == pdPASS;
 }
 
@@ -331,21 +382,15 @@ bool rtos_semaphore_wait_timeout(struct rtos_semaphore *rtos_semaphore_p,
  */
 void rtos_semaphore_signal(struct rtos_semaphore *rtos_semaphore_p)
 {
-    BaseType_t rtos_status;
-    error_t error;
-
     D_ASSERT(rtos_semaphore_p->sem_signature == SEMAPHORE_SIGNATURE);
+	bool old_writable = set_writable_background_region(true);
     if (CALLER_IS_THREAD()) {
-        rtos_status = xSemaphoreGive(rtos_semaphore_p->sem_os_semaphore);
+        (void)xSemaphoreGive(rtos_semaphore_p->sem_os_semaphore);
     } else {
-        rtos_status = xSemaphoreGiveFromISR(rtos_semaphore_p->sem_os_semaphore,
-                                            &g_rtos_task_context_switch_required);
+        (void)xSemaphoreGiveFromISR(rtos_semaphore_p->sem_os_semaphore,
+                                    &g_rtos_task_context_switch_required);
     }
-
-    if (rtos_status != pdPASS) {
-        error = CAPTURE_ERROR("xSemaphoreGive() failed", rtos_status, rtos_semaphore_p);
-        fatal_error_handler(error);
-    }
+    (void)set_writable_background_region(old_writable);
 }
 
 
@@ -390,11 +435,14 @@ void rtos_timer_init(struct rtos_timer *rtos_timer_p,
     rtos_timer_p->tmr_callback_p = timer_callback_p;
     rtos_timer_p->tmr_arg = arg;
 
+	bool old_writable = set_writable_background_region(true);
     rtos_timer_p->tmr_os_timer = xTimerCreate(timer_name_p,
                                               ticks,
                                               periodic,
                                               rtos_timer_p,
                                               rtos_timer_internal_callback);
+    (void)set_writable_background_region(old_writable);
+
     D_ASSERT(rtos_timer_p->tmr_os_timer != NULL);
 }
 
@@ -408,7 +456,10 @@ void rtos_timer_start(struct rtos_timer *rtos_timer_p)
     error_t error;
 
     D_ASSERT(rtos_timer_p->tmr_signature == TIMER_SIGNATURE);
+	bool old_writable = set_writable_background_region(true);
     rtos_status = xTimerStart(rtos_timer_p->tmr_os_timer, portMAX_DELAY);
+    (void)set_writable_background_region(old_writable);
+
     if (rtos_status != pdPASS) {
         error = CAPTURE_ERROR("xTimerStart() failed", rtos_status, rtos_timer_p);
         fatal_error_handler(error);
@@ -425,7 +476,10 @@ void rtos_timer_stop(struct rtos_timer *rtos_timer_p)
     error_t error;
 
 	D_ASSERT(rtos_timer_p->tmr_signature == TIMER_SIGNATURE);
+	bool old_writable = set_writable_background_region(true);
 	rtos_status = xTimerStop(rtos_timer_p->tmr_os_timer, portMAX_DELAY);
+    (void)set_writable_background_region(old_writable);
+
 	if (rtos_status != pdPASS) {
 		error = CAPTURE_ERROR("xTimerStop() failed", rtos_status, rtos_timer_p);
 		fatal_error_handler(error);
@@ -472,4 +526,33 @@ uint32_t rtos_get_ticks_since_boot(void)
 uint32_t rtos_get_time_since_boot(void)
 {
     return rtos_get_ticks_since_boot() / configTICK_RATE_HZ;
+}
+
+/*
+ *  Callbacks invoked from FreeRTOS
+ */
+
+void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
+								   StackType_t **ppxIdleTaskStackBuffer,
+								   uint32_t *pulIdleTaskStackSize )
+{
+	static struct rtos_task idle_task;
+
+	*ppxIdleTaskTCBBuffer = &idle_task.tsk_tcb;
+	*ppxIdleTaskStackBuffer = idle_task.tsk_stack;
+	*pulIdleTaskStackSize =
+		sizeof(idle_task.tsk_stack) / sizeof(idle_task.tsk_stack[0]);
+}
+
+void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
+		                            StackType_t **ppxTimerTaskStackBuffer,
+									uint32_t *pulTimerTaskStackSize)
+{
+	static struct rtos_task timer_task;
+
+	*ppxTimerTaskTCBBuffer = &timer_task.tsk_tcb;
+	*ppxTimerTaskStackBuffer = timer_task.tsk_stack;
+	*pulTimerTaskStackSize =
+		sizeof(timer_task.tsk_stack) / sizeof(timer_task.tsk_stack[0]);
+
 }

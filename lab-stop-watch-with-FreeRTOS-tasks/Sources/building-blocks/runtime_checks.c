@@ -11,18 +11,55 @@
 #include "atomic_utils.h"
 #include "microcontroller.h"
 #include "stack_trace.h"
+#include "printf_utils.h"
+#include <stddef.h>
+#include "memory_protection_unit.h"
 
-static void print_stack_trace(uint_fast8_t num_entries_to_skip)
+static void emergency_putc(void *putchar_arg_p, uint8_t c)
 {
-    uintptr_t trace_buff[8];
+	do {
+	} while (!(LPUART0->STAT & LPUART_STAT_TDRE_MASK));
+
+	LPUART0->DATA = c;
+}
+
+
+/**
+ * printf service that sends emergency output directly to the serial porrt
+ * doing polling
+ */
+void emergency_printf(const char  *fmt_s, ...)
+{
+    va_list  va;
+    bool mpu_was_enabled = mpu_disable();
+
+    va_start(va, fmt_s);
+    embedded_vprintf(emergency_putc, NULL, fmt_s, va);
+    va_end(va);
+
+    if (mpu_was_enabled) {
+    	mpu_enable();
+    }
+}
+
+
+void print_stack_trace(uint_fast8_t num_entries_to_skip,
+		               const void *start_pc,
+					   const void *start_frame_pointer,
+					   const struct rtos_task *task_p)
+{
+    uintptr_t trace_buff[10];
     uint_fast8_t num_trace_entries = sizeof(trace_buff) / sizeof(trace_buff[0]);
 
     stack_trace_capture(num_entries_to_skip,
+    		            start_pc,
+						start_frame_pointer,
+						task_p,
                         trace_buff,
                         &num_trace_entries);
 
     for (uint_fast8_t i = 0; i < num_trace_entries; i ++) {
-        console_printf("\t%#x\n", trace_buff[i]);
+        emergency_printf("\t%#x\n", trace_buff[i]);
     }
 }
 
@@ -37,6 +74,8 @@ static void print_stack_trace(uint_fast8_t num_entries_to_skip)
 void debug_assert_failure(const char *cond_str, const char *func_name,
                           const char *file_name, int line)
 {
+	bool old_writable = set_writable_background_region(true);
+
     static bool g_handling_assert_failure = false;
 
     uint32_t old_intmask = disable_cpu_interrupts();
@@ -51,12 +90,14 @@ void debug_assert_failure(const char *cond_str, const char *func_name,
 
     g_handling_assert_failure = true;
 
+#if 0 //???
     color_led_set(LED_COLOR_RED);
+#endif
 
-    console_printf("\n*** Assertion '%s' failed in %s() at %s:%d ***\n",
-                   cond_str, func_name, file_name, line);
+    emergency_printf("\n*** Assertion '%s' failed in %s() at %s:%d ***\n",
+                     cond_str, func_name, file_name, line);
 
-    print_stack_trace(2);
+    print_stack_trace(2, NULL, NULL, NULL);
 
 
 #if 1
@@ -68,6 +109,7 @@ void debug_assert_failure(const char *cond_str, const char *func_name,
 #endif
 
     g_handling_assert_failure = false;
+    (void)set_writable_background_region(old_writable);
 
     /*
      * Trap CPU in a dummy infinte loop
@@ -104,8 +146,8 @@ error_t capture_error(const char *error_description,
      */
     uint32_t old_primask = disable_cpu_interrupts();
 
-    console_printf("ERROR: %s (arg1: %#x, arg2: %#x, location: %#x)\n",
-                   error_description, arg1, arg2, error_address);
+    emergency_printf("ERROR: %s (arg1: %#x, arg2: %#x, location: %#x)\n",
+                     error_description, arg1, arg2, error_address);
 
     restore_cpu_interrupts(old_primask);
     return (error_t)error_address;
@@ -126,10 +168,13 @@ void fatal_error_handler(error_t error)
      * Block all further interrupts:
      */
     (void)disable_cpu_interrupts();
-
+    (void)mpu_disable();
     g_handling_fatal_error = true;
+#if 0 //???
     color_led_set(LED_COLOR_RED);
-    console_printf("\n*** Fatal error %#x ***\n", error);
+#endif
+    emergency_printf("\n*** Fatal error %#x ***\n", error);
+    print_stack_trace(2, NULL, NULL, NULL);
 
     /*
      * If running under the debugger, break into it. Otherwise,
