@@ -72,6 +72,7 @@ static struct rtos_task g_console_task;
 
 static void update_stopwatch_display(uint32_t update_mask)
 {
+	console_lock();
 	if (update_mask & HOURS_CHANGED_MASK) {
         console_pos_printf(11, 21, 0, "%02u:%02u:%02u.%u",
                            g_stopwatch.hours,
@@ -92,6 +93,8 @@ static void update_stopwatch_display(uint32_t update_mask)
         console_pos_printf(11, 30, 0, "%u",
                            g_stopwatch.milliseconds / 100);
     }
+
+	console_unlock();
 }
 
 /**
@@ -101,13 +104,12 @@ static void reset_stopwatch(void)
 {
 	struct mpu_region_descriptor old_region;
 
-    //set_private_data_region(&g_stopwatch, sizeof(g_stopwatch), READ_WRITE, &old_region);
+    set_private_data_region(&g_stopwatch, sizeof(g_stopwatch), READ_WRITE, &old_region);
 	g_stopwatch.hours = 0;
     g_stopwatch.minutes = 0;
 	g_stopwatch.seconds = 0;
 	g_stopwatch.milliseconds = 0;
     restore_private_data_region(&old_region);
-	update_stopwatch_display(HOURS_CHANGED_MASK | MINUTES_CHANGED_MASK | SECONDS_CHANGED_MASK);
 }
 
 /**
@@ -116,6 +118,7 @@ static void reset_stopwatch(void)
 static void init_stopwatch_display(void)
 {
 	console_draw_box(10, 20, 3, 12, 0);
+    console_pos_printf(11, 21, 0, "00:00:00.0");
 }
 
 /**
@@ -148,6 +151,7 @@ static void read_stopwatch_buttons(void)
 		g_stopwatch.running = !g_stopwatch.running;
 	} else if (c == 'r') {
 		reset_stopwatch();
+	    update_stopwatch_display(HOURS_CHANGED_MASK | MINUTES_CHANGED_MASK | SECONDS_CHANGED_MASK);
 		g_stopwatch.running = true;
 	}
     restore_private_data_region(&old_region);
