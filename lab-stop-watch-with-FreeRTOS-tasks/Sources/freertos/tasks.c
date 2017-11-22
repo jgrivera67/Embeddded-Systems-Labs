@@ -81,6 +81,11 @@ task.h is included from an application file. */
 #include "task.h"
 #include "timers.h"
 #include "StackMacros.h"
+/* Begin MPU support */
+#include <building-blocks/rtos_wrapper.h>
+#include <building-blocks/memory_protection_unit.h>
+#include <building-blocks/mem_utils.h>
+/*End MPU support */
 
 /* Lint e961 and e750 are suppressed as a MISRA exception justified because the
 MPU ports require MPU_WRAPPERS_INCLUDED_FROM_API_FILE to be defined for the
@@ -596,6 +601,15 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB ) PRIVILEGED_FUNCTION;
 
 		configASSERT( puxStackBuffer != NULL );
 		configASSERT( pxTaskBuffer != NULL );
+
+		/* Begin MPU support */
+		struct rtos_task *rtos_task_p =
+							ENCLOSING_STRUCT(pxTaskBuffer, struct rtos_task, tsk_tcb);
+
+		initialize_thread_mpu_regions(puxStackBuffer,
+									  ulStackDepth * sizeof(StackType_t),
+    							      &rtos_task_p->tsk_mpu_regions);
+		/*End MPU support */
 
 		if( ( pxTaskBuffer != NULL ) && ( puxStackBuffer != NULL ) )
 		{
@@ -1950,11 +1964,15 @@ void vTaskEndScheduler( void )
 
 void vTaskSuspendAll( void )
 {
+	bool old_writable = set_writable_background_region(true); /*MPU support*/
+
 	/* A critical section is not required as the variable is of type
 	BaseType_t.  Please read Richard Barry's reply in the following link to a
 	post in the FreeRTOS support forum before reporting this as a bug! -
 	http://goo.gl/wu4acr */
 	++uxSchedulerSuspended;
+
+	set_writable_background_region(old_writable); /*MPU support*/
 }
 /*----------------------------------------------------------*/
 
@@ -2037,6 +2055,8 @@ BaseType_t xAlreadyYielded = pdFALSE;
 	tasks from this list into their appropriate ready list. */
 	taskENTER_CRITICAL();
 	{
+		bool old_writable = set_writable_background_region(true); /*MPU support*/
+
 		--uxSchedulerSuspended;
 
 		if( uxSchedulerSuspended == ( UBaseType_t ) pdFALSE )
@@ -2124,6 +2144,8 @@ BaseType_t xAlreadyYielded = pdFALSE;
 		{
 			mtCOVERAGE_TEST_MARKER();
 		}
+
+		set_writable_background_region(old_writable); /*MPU support*/
 	}
 	taskEXIT_CRITICAL();
 
@@ -2508,6 +2530,7 @@ BaseType_t xTaskIncrementTick( void )
 TCB_t * pxTCB;
 TickType_t xItemValue;
 BaseType_t xSwitchRequired = pdFALSE;
+	bool old_writable = set_writable_background_region(true); /*MPU support*/
 
 	/* Called by the portable layer each time a tick interrupt occurs.
 	Increments the tick then checks to see if the new tick value will cause any
@@ -2671,6 +2694,7 @@ BaseType_t xSwitchRequired = pdFALSE;
 	}
 	#endif /* configUSE_PREEMPTION */
 
+	set_writable_background_region(old_writable); /*MPU support*/
 	return xSwitchRequired;
 }
 /*-----------------------------------------------------------*/
@@ -2769,12 +2793,17 @@ void vTaskSwitchContext( void )
 {
 	if( uxSchedulerSuspended != ( UBaseType_t ) pdFALSE )
 	{
+		bool old_writable = set_writable_background_region(true); /*MPU support*/
+
 		/* The scheduler is currently suspended - do not allow a context
 		switch. */
 		xYieldPending = pdTRUE;
+		set_writable_background_region(old_writable); /*MPU support*/
 	}
 	else
 	{
+		bool old_writable = set_writable_background_region(true); /*MPU support*/
+
 		xYieldPending = pdFALSE;
 		traceTASK_SWITCHED_OUT();
 
@@ -2808,6 +2837,15 @@ void vTaskSwitchContext( void )
 		/* Check for stack overflow, if configured. */
 		taskCHECK_FOR_STACK_OVERFLOW();
 
+		set_writable_background_region(old_writable); /*MPU support*/
+
+		/* Begin MPU support */
+		struct rtos_task *rtos_task_p =
+							ENCLOSING_STRUCT(pxCurrentTCB, struct rtos_task, tsk_tcb);
+
+		save_thread_mpu_regions(&rtos_task_p->tsk_mpu_regions);
+		/*End MPU support */
+
 		/* Select a new task to run using either the generic C or port
 		optimised asm code. */
 		taskSELECT_HIGHEST_PRIORITY_TASK();
@@ -2820,6 +2858,11 @@ void vTaskSwitchContext( void )
 			_impure_ptr = &( pxCurrentTCB->xNewLib_reent );
 		}
 		#endif /* configUSE_NEWLIB_REENTRANT */
+
+		/* Begin MPU support */
+		rtos_task_p = ENCLOSING_STRUCT(pxCurrentTCB, struct rtos_task, tsk_tcb);
+		restore_thread_mpu_regions(&rtos_task_p->tsk_mpu_regions);
+		/*End MPU support */
 	}
 }
 /*-----------------------------------------------------------*/
@@ -4759,7 +4802,10 @@ const TickType_t xConstTickCount = xTickCount;
 				needs to be updated too. */
 				if( xTimeToWake < xNextTaskUnblockTime )
 				{
+					bool old_writable = set_writable_background_region(true); /*MPU support*/
+
 					xNextTaskUnblockTime = xTimeToWake;
+					set_writable_background_region(old_writable); /*MPU support*/
 				}
 				else
 				{

@@ -71,6 +71,7 @@
 #include <stdlib.h>
 #include "FreeRTOS.h"
 #include "list.h"
+#include <building-blocks/memory_protection_unit.h> /*MPU support*/
 
 /*-----------------------------------------------------------
  * PUBLIC LIST API documented in list.h
@@ -196,6 +197,8 @@ const TickType_t xValueOfInsertion = pxNewListItem->xItemValue;
 		}
 	}
 
+	bool old_writable = set_writable_background_region(true); /*MPU support*/
+
 	pxNewListItem->pxNext = pxIterator->pxNext;
 	pxNewListItem->pxNext->pxPrevious = pxNewListItem;
 	pxNewListItem->pxPrevious = pxIterator;
@@ -206,6 +209,7 @@ const TickType_t xValueOfInsertion = pxNewListItem->xItemValue;
 	pxNewListItem->pvContainer = ( void * ) pxList;
 
 	( pxList->uxNumberOfItems )++;
+	set_writable_background_region(old_writable); /*MPU support*/
 }
 /*-----------------------------------------------------------*/
 
@@ -214,6 +218,7 @@ UBaseType_t uxListRemove( ListItem_t * const pxItemToRemove )
 /* The list item knows which list it is in.  Obtain the list from the list
 item. */
 List_t * const pxList = ( List_t * ) pxItemToRemove->pvContainer;
+	bool old_writable = set_writable_background_region(true); /*MPU support*/
 
 	pxItemToRemove->pxNext->pxPrevious = pxItemToRemove->pxPrevious;
 	pxItemToRemove->pxPrevious->pxNext = pxItemToRemove->pxNext;
@@ -234,6 +239,7 @@ List_t * const pxList = ( List_t * ) pxItemToRemove->pvContainer;
 	pxItemToRemove->pvContainer = NULL;
 	( pxList->uxNumberOfItems )--;
 
+	set_writable_background_region(old_writable); /*MPU support*/
 	return pxList->uxNumberOfItems;
 }
 /*-----------------------------------------------------------*/

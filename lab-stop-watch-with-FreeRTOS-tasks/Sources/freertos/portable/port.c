@@ -75,6 +75,11 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "fsl_tickless_generic.h"
+/* Begin MPU support */
+#include <building-blocks/rtos_wrapper.h>
+#include <building-blocks/memory_protection_unit.h>
+#include <building-blocks/mem_utils.h>
+/*End MPU support */
 
 extern uint32_t SystemCoreClock; /* in Kinetis SDK, this contains the system core clock speed */
 
@@ -163,6 +168,14 @@ void vPortSVCHandler( void )
 
 void vPortStartFirstTask( void )
 {
+	/* Begin MPU support */
+	extern void *pxCurrentTCB;
+	struct rtos_task *rtos_task_p =
+						ENCLOSING_STRUCT(pxCurrentTCB, struct rtos_task, tsk_tcb);
+
+	restore_thread_mpu_regions(&rtos_task_p->tsk_mpu_regions);
+	/*End MPU support */
+
 	/* The MSP stack is not reset as, unlike on M3/4 parts, there is no vector
 	table offset register that can be used to locate the initial stack value.
 	Not all M0 parts have the application vector table at address 0. */
@@ -240,8 +253,12 @@ void vPortYield( void )
 
 void vPortEnterCritical( void )
 {
+	struct mpu_region_descriptor old_region;
+
     portDISABLE_INTERRUPTS();
+    set_private_data_region(&uxCriticalNesting, sizeof(uxCriticalNesting), READ_WRITE, &old_region);
     uxCriticalNesting++;
+    restore_private_data_region(&old_region);
 	__asm volatile( "dsb" );
 	__asm volatile( "isb" );
 }
@@ -249,8 +266,12 @@ void vPortEnterCritical( void )
 
 void vPortExitCritical( void )
 {
+	struct mpu_region_descriptor old_region;
+
 	configASSERT( uxCriticalNesting );
+    set_private_data_region(&uxCriticalNesting, sizeof(uxCriticalNesting), READ_WRITE, &old_region);
     uxCriticalNesting--;
+    restore_private_data_region(&old_region);
     if( uxCriticalNesting == 0 )
     {
         portENABLE_INTERRUPTS();

@@ -79,6 +79,8 @@ task.h is included from an application file. */
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
+#include <building-blocks/rtos_wrapper.h>
+#include <building-blocks/memory_protection_unit.h>
 
 #if ( INCLUDE_xTimerPendFunctionCall == 1 ) && ( configUSE_TIMERS == 0 )
 	#error configUSE_TIMERS must be set to 1 to make the xTimerPendFunctionCall() function available.
@@ -664,6 +666,8 @@ PRIVILEGED_DATA static TickType_t xLastTime = ( TickType_t ) 0U; /*lint !e956 Va
 
 	xTimeNow = xTaskGetTickCount();
 
+	bool old_writable = set_writable_background_region(true); /*MPU support*/
+
 	if( xTimeNow < xLastTime )
 	{
 		prvSwitchTimerLists();
@@ -676,6 +680,7 @@ PRIVILEGED_DATA static TickType_t xLastTime = ( TickType_t ) 0U; /*lint !e956 Va
 
 	xLastTime = xTimeNow;
 
+	set_writable_background_region(old_writable); /*MPU support*/
 	return xTimeNow;
 }
 /*-----------------------------------------------------------*/

@@ -78,6 +78,7 @@ task.h is included from an application file. */
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include <building-blocks/memory_protection_unit.h> /*MPU support*/
 
 #if ( configUSE_CO_ROUTINES == 1 )
 	#include "croutine.h"
@@ -2358,6 +2359,7 @@ BaseType_t xReturn;
 	void vQueueWaitForMessageRestricted( QueueHandle_t xQueue, TickType_t xTicksToWait, const BaseType_t xWaitIndefinitely )
 	{
 	Queue_t * const pxQueue = ( Queue_t * ) xQueue;
+		bool old_writable = set_writable_background_region(true); /*MPU support*/
 
 		/* This function should not be called by application code hence the
 		'Restricted' in its name.  It is not part of the public API.  It is
@@ -2384,6 +2386,7 @@ BaseType_t xReturn;
 			mtCOVERAGE_TEST_MARKER();
 		}
 		prvUnlockQueue( pxQueue );
+		set_writable_background_region(old_writable); /*MPU support*/
 	}
 
 #endif /* configUSE_TIMERS */
