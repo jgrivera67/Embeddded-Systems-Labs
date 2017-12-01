@@ -45,10 +45,9 @@ enum mpu_region_id {
     GLOBAL_FLASH_CODE_REGION = 1,
     GLOBAL_RAM_CODE_REGION = 2,
     GLOBAL_INTERRUPT_STACK_REGION = 3,
-    GLOBAL_MPU_IO_REGION = 4,
-    THREAD_STACK_DATA_REGION = 5,
-    PRIVATE_DATA_REGION = 6,
-    PRIVATE_CODE_REGION = 7,
+    THREAD_STACK_DATA_REGION = 4,
+    PRIVATE_DATA_REGION = 5,
+    PRIVATE_CODE_REGION = 6,
 
     /* If additional regions are necessary, they must be defined above */
     MAX_NUM_MPU_REGIONS

@@ -396,34 +396,17 @@ void mpu_init(void)
                       PRIVILEGED_READ_WRITE_UNPRIVILEGED_NO_ACCESS,
                       false /*no execute*/);
 
-#if 0
-     /*
-      *  Set global region for accessing the MPU I/O registers:
-      *
-      *  NOTE: Once the default background region is disabled,
-      *  we won't be able to modify any MPU region descriptor unless
-      *  we reserve a region for the MPU itself.
-      */
-     define_mpu_region(GLOBAL_MPU_IO_REGION,
-    		 	 	   mpu_regs_p,
-                       LAST_ADDRESS(mpu_regs_p, sizeof(*mpu_regs_p)),
-                       PRIVILEGED_READ_WRITE_UNPRIVILEGED_NO_ACCESS,
-                       false /*no execute*/);
-#endif
-
     /*
      * NOTE: We do not need to set a region for the ARM core
      * memory-mapped control registers (private peripheral area:
-     * 16#E000_0000# .. 16#E00F_FFFF#), as they are always accessible
-     * in privileged mode, regardless of the MPU settings.
+     * 16#E000_0000# .. 16#E00F_FFFF#, which also includes the MPU
+     * registers), as they are always accessible in privileged mode,
+     * regardless of the MPU settings.
      */
 
     /*
-     * NOTE: Leave the MPU disabled, so that the Ada runtime startup code
-     * and global package elaboration can execute normally.
-     * The application's main program is expected to call Enable_MPU
+     * NOTE: Leave the MPU disabled by default.
      */
-
     mpu_var_p->return_from_fault_enabled = false;
     mpu_var_p->initialized = true;
 }
