@@ -63,9 +63,9 @@
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std.723732095" name="Language standard" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.std.c11" valueType="enumerated"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths.1809879921" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;../Sources&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;../Sources/application&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../Sources/freertos&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../Sources/freertos/portable&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;../Sources/freertos_9.0.0/Source/portable/GCC/ARM_CM0&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../Sources/MCU&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../Sources/MCU/CMSIS&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../Sources/sdk&quot;"/>
@@ -111,7 +111,7 @@
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.scriptfile.1747025618" name="Script files (-T)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.scriptfile" valueType="stringList">
 									<listOptionValue builtIn="false" value="MKL28Z512xxx7_flash.ld"/>
 								</option>
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.otherobjs.1889762534" name="Other objects" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.otherobjs" valueType="userObjs"/>
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.otherobjs.1889762534" name="Other objects" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.otherobjs"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.verbose.1410909953" name="Verbose (-v)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.verbose" value="true" valueType="boolean"/>
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.input.2097407321" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>

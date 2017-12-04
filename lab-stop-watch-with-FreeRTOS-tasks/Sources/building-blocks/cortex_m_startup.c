@@ -137,10 +137,12 @@ void Reset_Handler(void)
       * NOTE: C global and static variables can only be accessed after this point
       */
 
+#if 0
     /*
      * Run C++ static constructors:
      */
     __libc_init_array();
+#endif
 
     /*
      * NOTE: C++ global/static objects can only be accessed after this point

@@ -249,9 +249,8 @@ int main(void)
 	 * Display greeting:
 	 */
 	console_clear();
-	console_printf("lab - Stop Watch with FreeRTOS tasks  (built " __DATE__ " " __TIME__ ")\n"
-	  		       "Reference solution\n"
-	    		   "Buttons: s - start/stop    r - reset\n");
+	console_printf("Stop Watch with FreeRTOS tasks  (built " __DATE__ " " __TIME__ ")\n"
+	    	       "Buttons: s - start/stop    r - reset\n");
 
 	init_stopwatch();
 

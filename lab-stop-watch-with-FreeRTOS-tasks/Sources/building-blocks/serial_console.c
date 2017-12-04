@@ -105,6 +105,7 @@ static void console_output_task_func(void *arg)
 {
     uint8_t c;
 
+    D_ASSERT(arg == NULL);
     D_ASSERT(g_console.do_async_output);
     for ( ; ; ) {
         c = byte_ring_buffer_read(&g_console.output_buffer);
@@ -183,12 +184,10 @@ void console_unlock(void)
     rtos_mutex_unlock(&g_console.mutex);
 }
 
-
 bool console_is_locked(void)
 {
     return rtos_mutex_is_mine(&g_console.mutex);
 }
-
 
 /**
  * Send a character to the UART
@@ -222,6 +221,7 @@ void console_puts(const char *s)
  */
 static void putchar_callback(void *putchar_arg_p, uint8_t c)
 {
+    D_ASSERT(putchar_arg_p == NULL);
     if (g_console.do_async_output && CPU_INTERRUPTS_ARE_ENABLED()) {
         byte_ring_buffer_write(&g_console.output_buffer, c);
     } else {
@@ -504,7 +504,6 @@ int console_getchar(void)
     D_ASSERT(g_console.initialized);
     return uart_getchar(g_console.uart_device_p);
 }
-
 
 /**
  * Reads the next character received on the console UART, if any.

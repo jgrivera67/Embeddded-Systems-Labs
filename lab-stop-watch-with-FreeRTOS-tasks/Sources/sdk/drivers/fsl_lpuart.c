@@ -29,6 +29,7 @@
  */
 
 #pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 #include "fsl_lpuart.h"
 #include <building-blocks/memory_protection_unit.h>

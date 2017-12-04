@@ -28,6 +28,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 #include "fsl_smc.h"
 #include "fsl_flash.h"
 

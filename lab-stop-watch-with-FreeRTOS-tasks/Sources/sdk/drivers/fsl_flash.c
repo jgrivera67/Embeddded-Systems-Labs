@@ -29,6 +29,7 @@
  */
 
 #pragma GCC diagnostic ignored "-Wold-style-declaration"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 #include "fsl_flash.h"
 

@@ -217,7 +217,8 @@ void rtos_task_semaphore_wait(void)
  */
 void rtos_task_semaphore_signal(struct rtos_task *rtos_task_p)
 {
-    error_t error = CAPTURE_ERROR("function not supported for FreeRTOS" , rtos_task_semaphore_signal, 0);
+    error_t error = CAPTURE_ERROR("function not supported for FreeRTOS" ,
+    		                      rtos_task_semaphore_signal, rtos_task_p);
 
     /* TODO: Implement this using ulTaskNotifyGive() */
     fatal_error_handler(error);
@@ -302,7 +303,6 @@ bool rtos_mutex_is_mine(const struct rtos_mutex *rtos_mutex_p)
 
     return owner == xTaskGetCurrentTaskHandle();
 }
-
 
 /**
  * Initializes an RTOS-level semaphore
@@ -399,7 +399,8 @@ void rtos_semaphore_signal(struct rtos_semaphore *rtos_semaphore_p)
  */
 void rtos_semaphore_broadcast(struct rtos_semaphore *rtos_semaphore_p)
 {
-    error_t error = CAPTURE_ERROR("function not supported for FreeRTOS", rtos_semaphore_broadcast, 0);
+    error_t error = CAPTURE_ERROR("function not supported for FreeRTOS",
+    		                      rtos_semaphore_broadcast, rtos_semaphore_p);
 
     fatal_error_handler(error);
 }
@@ -509,7 +510,6 @@ void rtos_task_check_stack(struct rtos_task *task_p)
         ERROR_PRINTF("*** Task '%s' killed.\n", task_p->tsk_name_p);
     }
 }
-
 
 /**
  * Return Time since boot in ticks

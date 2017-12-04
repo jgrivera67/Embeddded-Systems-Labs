@@ -15,6 +15,9 @@
 #include <stddef.h>
 #include "memory_protection_unit.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 static void emergency_putc(void *putchar_arg_p, uint8_t c)
 {
 	do {
@@ -23,6 +26,7 @@ static void emergency_putc(void *putchar_arg_p, uint8_t c)
 	LPUART0->DATA = c;
 }
 
+#pragma GCC diagnostic pop
 
 /**
  * printf service that sends emergency output directly to the serial porrt
