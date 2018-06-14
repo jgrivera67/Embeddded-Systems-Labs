@@ -227,7 +227,7 @@ static void stop_watch_updater_task_func(void *arg)
 
 int main(void)
 {
-	BOARD_BootClockRUN();
+    BOARD_BootClockRUN();
     mpu_init();
     rtos_init();
 

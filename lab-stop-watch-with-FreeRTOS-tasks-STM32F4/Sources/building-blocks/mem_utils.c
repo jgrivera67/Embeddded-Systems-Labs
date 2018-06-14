@@ -10,6 +10,8 @@
 #include "runtime_checks.h"
 #include <stdint.h>
 
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+
 #define CRC_32_POLYNOMIAL UINT32_C(0x04c11db7)
 
 /**

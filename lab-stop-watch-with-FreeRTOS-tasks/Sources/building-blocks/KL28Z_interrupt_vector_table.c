@@ -174,6 +174,9 @@ isr_function_t *const g_interrupt_vector_table[] __attribute__ ((section(".isr_v
     [IRQ_NUMBER_TO_VECTOR_NUMBER(Reserved79_IRQn)] = unexpected_irq_handler
 };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-const-variable"
+
 /**
  * SoC configuration in Flash
  */
@@ -192,5 +195,7 @@ static const NV_Type nv_cfmconfig __attribute__ ((section(".FlashConfig"))) = {
     .FPROT0 = 0xff,
     .FSEC = 0xfe,
     .FOPT = 0x3d,
-	.padding = 0xffff
+    .padding = 0xffff
 };
+
+#pragma GCC diagnostic pop

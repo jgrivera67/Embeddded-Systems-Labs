@@ -21,6 +21,7 @@ local_src := $(subdirectory)/atomic_utils.c \
              $(subdirectory)/stack_trace.c \
              $(subdirectory)/system_clocks.c \
              $(subdirectory)/time_utils.c \
+             $(subdirectory)/uart_driver.c \
              $(subdirectory)/watchdog.c
 
              #$(subdirectory)/hw_timer_driver.c \

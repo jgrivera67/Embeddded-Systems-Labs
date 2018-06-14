@@ -24,7 +24,7 @@ struct uart_device {
 #   define UART_DEVICE_SIGNATURE  GEN_SIGNATURE('U', 'A', 'R', 'T')
     uint32_t urt_signature;
     struct uart_device_var *urt_var_p;
-    USART_TypeDef *urt_mmio_uart_p;
+    USART_TypeDef *urt_mmio_regs_p;
     volatile uint32_t *urt_mmio_tx_port_pcr_p;
     volatile uint32_t *urt_mmio_rx_port_pcr_p;
     uint32_t urt_mmio_pin_mux_selector_mask;

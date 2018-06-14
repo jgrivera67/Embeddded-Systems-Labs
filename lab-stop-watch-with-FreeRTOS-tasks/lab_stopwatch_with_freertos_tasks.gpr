@@ -1,0 +1,117 @@
+project lab_stopwatch_with_freertos_tasks is
+
+   for Target use "arm-eabi";
+
+   for Languages use ("C");
+
+   for Main use ("main.c");
+
+   for Source_Dirs use ("Sources/application",
+                        "Sources/building-blocks",
+                        "Sources/freertos",
+                        "Sources/freertos/portable",
+                        "Sources/MCU",
+                        "Sources/sdk/board",
+	                "Sources/sdk/drivers",
+	                "Sources/sdk/utilities",
+	                "Sources/sdk/MCU");
+
+   for Object_Dir use "obj";
+
+   for Exec_Dir  use ".";
+
+   package Naming is
+      for Spec_Suffix ("C") use ".h";
+      for Body_Suffix ("C") use ".c";
+   end Naming;
+
+   type MCU_Type is ("KL28Z", "STM32F401");
+
+   MCU : MCU_Type := External ("MCU", "KL28Z");
+   Mcu_Switches := ();
+   Executable_Prefix := "lab_stopwatch_with_freertos_tasks";
+   Linker_Script := "";
+   Common_Switches := ("-fno-omit-frame-pointer",
+                       "-ffunction-sections",
+                       "-fdata-sections",
+                       "-ffreestanding",
+                       -- "-fverbose-asm",
+                       "-std=gnu11",
+                       "-g",
+                       "-O0");
+
+   case MCU is
+      when "KL28Z"  =>
+	 Mcu_Switches := ("-DKL28Z",
+			  "-DCPU_MKL28Z512VDC7",
+			  "-DFSL_RTOS_FREE_RTOS",
+			  "-DFRDM_KL28Z",
+			  "-DFREEDOM",
+			  "-D__CORTEX_SC=0x0",
+			  "-mcpu=cortex-m0plus",
+			  "-mthumb");
+	 Linker_Script :=
+	    "../Project_Settings/Linker_Files/MKL28Z512xxx7_flash.ld";
+      when "STM32F401"  =>
+	 Mcu_Switches := ("-DSTM32F4_MCU",
+			  "-mcpu=cortex-m4",
+			  "-mthumb",
+			  "-mfloat-abi=softfp",
+			  "-mfpu=fpv4-sp-d16");
+	 Linker_Script :=
+	    "../Sources/MCU/STM32F401VEHx_FLASH.ld";
+   end case;
+
+   package Compiler is
+      Include_Switches := ("-I../Sources",
+	                   "-I../Sources/application",
+                           "-I../Sources/freertos",
+	                   "-I../Sources/freertos/portable",
+                           "-I../Sources/MCU",
+	                   "-I../Sources/MCU/CMSIS",
+	                   "-I../Sources/sdk",
+	                   "-I../Sources/sdk/board",
+	                   "-I../Sources/sdk/drivers",
+	                   "-I../Sources/sdk/utilities",
+	                   "-I../Sources/sdk/MCU");
+
+      for Default_Switches ("C") use Common_Switches &
+                                     Include_Switches &
+                                     Mcu_Switches &
+                                     ("-Wall",
+                                      "-Wstrict-prototypes",
+                                      "-fms-extensions",
+                                      "-Wextra",
+                                      "-Wformat",
+                                      "-Wunreachable-code",
+                                      "-Wshadow",
+                                      "-Wmissing-prototypes",
+                                      "-Wpointer-arith",
+                                      "-Winline",
+                                      "-Werror",
+                                      "-Wstack-usage=224",
+                                      "-Wundef",
+                                      "-Wdouble-promotion",
+	                              "-DDEBUG");
+    end Compiler;
+
+   package Linker is
+      for Default_Switches ("C") use Common_Switches &
+                                     ("-nostartfiles",
+				      --"-nostdlib",
+				      "-Wl,-Map=" & Executable_Prefix & ".map",
+				      "-Xlinker", "--gc-sections",
+	                              "-T" & Linker_Script);
+   end Linker;
+
+   package Builder is
+      for Executable ("main.c") use Executable_Prefix & ".elf";
+   end Builder;
+
+   package Ide is
+      for Program_Host use "localhost:4242";
+      for Communication_Protocol use "remote";
+   end Ide;
+
+end lab_stopwatch_with_freertos_tasks;
+

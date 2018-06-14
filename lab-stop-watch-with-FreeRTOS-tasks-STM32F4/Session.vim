@@ -10,8 +10,8 @@ endif
 set shortmess=aoO
 badd +15 ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/arm_cmsis.h
 badd +12 ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/microcontroller.h
-badd +0 Sources/build.mk
-badd +291 ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/MCU/stm32f401xe.h
+badd +1 Sources/build.mk
+badd +1 ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/MCU/stm32f401xe.h
 badd +92 ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/pin_config.h
 badd +224 ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/application/main.c
 badd +31 Sources/MCU/STM32F401VEHx_FLASH.ld
@@ -22,11 +22,14 @@ badd +18 ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-ST
 badd +15 ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/compile_time_checks.h
 badd +63 ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/byte_ring_buffer.h
 badd +18 Sources/building-blocks/byte_ring_buffer.c
-badd +27 ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/hw_timer_driver.h
+badd +1 ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/hw_timer_driver.h
+badd +24 Sources/building-blocks/module.mk
+badd +51 ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/uart_driver.c
+badd +23 Sources/building-blocks/uart_driver.h
 argglobal
 silent! argdel *
-argadd .
-set lines=68 columns=252
+argadd ./
+set lines=68 columns=251
 winpos 0 0
 set stal=2
 edit ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/MCU/stm32f401xe.h
@@ -55,16 +58,17 @@ set nosplitright
 wincmd t
 set winheight=1 winwidth=1
 exe '1resize ' . ((&lines * 18 + 34) / 68)
-exe 'vert 1resize ' . ((&columns * 127 + 126) / 252)
+exe 'vert 1resize ' . ((&columns * 126 + 125) / 251)
 exe '2resize ' . ((&lines * 19 + 34) / 68)
-exe 'vert 2resize ' . ((&columns * 127 + 126) / 252)
+exe 'vert 2resize ' . ((&columns * 126 + 125) / 251)
 exe '3resize ' . ((&lines * 16 + 34) / 68)
-exe 'vert 3resize ' . ((&columns * 127 + 126) / 252)
+exe 'vert 3resize ' . ((&columns * 126 + 125) / 251)
 exe '4resize ' . ((&lines * 27 + 34) / 68)
-exe 'vert 4resize ' . ((&columns * 124 + 126) / 252)
+exe 'vert 4resize ' . ((&columns * 123 + 125) / 251)
 exe '5resize ' . ((&lines * 27 + 34) / 68)
-exe 'vert 5resize ' . ((&columns * 124 + 126) / 252)
+exe 'vert 5resize ' . ((&columns * 123 + 125) / 251)
 exe '6resize ' . ((&lines * 10 + 34) / 68)
+exe 'vert 6resize ' . ((&columns * 250 + 125) / 251)
 argglobal
 setlocal fdm=manual
 setlocal fde=0
@@ -93,12 +97,12 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 16 - ((7 * winheight(0) + 9) / 19)
+let s:l = 16 - ((10 * winheight(0) + 9) / 19)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
 16
-normal! 012|
+normal! 01|
 wincmd w
 argglobal
 edit ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/pin_config.h
@@ -111,7 +115,7 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 16 - ((15 * winheight(0) + 8) / 16)
+let s:l = 16 - ((6 * winheight(0) + 8) / 16)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
@@ -129,7 +133,7 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 125 - ((25 * winheight(0) + 13) / 27)
+let s:l = 125 - ((33 * winheight(0) + 13) / 27)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
@@ -147,7 +151,7 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 17 - ((16 * winheight(0) + 13) / 27)
+let s:l = 17 - ((11 * winheight(0) + 13) / 27)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
@@ -166,16 +170,17 @@ setlocal fdn=20
 setlocal fen
 wincmd w
 exe '1resize ' . ((&lines * 18 + 34) / 68)
-exe 'vert 1resize ' . ((&columns * 127 + 126) / 252)
+exe 'vert 1resize ' . ((&columns * 126 + 125) / 251)
 exe '2resize ' . ((&lines * 19 + 34) / 68)
-exe 'vert 2resize ' . ((&columns * 127 + 126) / 252)
+exe 'vert 2resize ' . ((&columns * 126 + 125) / 251)
 exe '3resize ' . ((&lines * 16 + 34) / 68)
-exe 'vert 3resize ' . ((&columns * 127 + 126) / 252)
+exe 'vert 3resize ' . ((&columns * 126 + 125) / 251)
 exe '4resize ' . ((&lines * 27 + 34) / 68)
-exe 'vert 4resize ' . ((&columns * 124 + 126) / 252)
+exe 'vert 4resize ' . ((&columns * 123 + 125) / 251)
 exe '5resize ' . ((&lines * 27 + 34) / 68)
-exe 'vert 5resize ' . ((&columns * 124 + 126) / 252)
+exe 'vert 5resize ' . ((&columns * 123 + 125) / 251)
 exe '6resize ' . ((&lines * 10 + 34) / 68)
+exe 'vert 6resize ' . ((&columns * 250 + 125) / 251)
 tabedit ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/hw_timer_driver.h
 set splitbelow splitright
 wincmd _ | wincmd |
@@ -206,7 +211,7 @@ normal! zt
 normal! 014|
 wincmd w
 argglobal
-enew
+edit ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/microcontroller.h
 setlocal fdm=manual
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -215,6 +220,13 @@ setlocal fdl=0
 setlocal fml=1
 setlocal fdn=20
 setlocal fen
+silent! normal! zE
+let s:l = 124 - ((29 * winheight(0) + 16) / 33)
+if s:l < 1 | let s:l = 1 | endif
+exe s:l
+normal! zt
+124
+normal! 046|
 wincmd w
 exe '1resize ' . ((&lines * 32 + 34) / 68)
 exe '2resize ' . ((&lines * 33 + 34) / 68)
@@ -272,8 +284,8 @@ set nosplitbelow
 set nosplitright
 wincmd t
 set winheight=1 winwidth=1
-exe 'vert 1resize ' . ((&columns * 127 + 126) / 252)
-exe 'vert 2resize ' . ((&columns * 124 + 126) / 252)
+exe 'vert 1resize ' . ((&columns * 126 + 125) / 251)
+exe 'vert 2resize ' . ((&columns * 123 + 125) / 251)
 argglobal
 setlocal fdm=manual
 setlocal fde=0
@@ -309,9 +321,155 @@ normal! zt
 141
 normal! 029|
 wincmd w
-exe 'vert 1resize ' . ((&columns * 127 + 126) / 252)
-exe 'vert 2resize ' . ((&columns * 124 + 126) / 252)
-tabnext 5
+exe 'vert 1resize ' . ((&columns * 126 + 125) / 251)
+exe 'vert 2resize ' . ((&columns * 123 + 125) / 251)
+tabedit ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/pin_config.c
+set splitbelow splitright
+wincmd _ | wincmd |
+vsplit
+1wincmd h
+wincmd w
+set nosplitbelow
+set nosplitright
+wincmd t
+set winheight=1 winwidth=1
+exe 'vert 1resize ' . ((&columns * 125 + 125) / 251)
+exe 'vert 2resize ' . ((&columns * 125 + 125) / 251)
+argglobal
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+silent! normal! zE
+let s:l = 25 - ((0 * winheight(0) + 33) / 66)
+if s:l < 1 | let s:l = 1 | endif
+exe s:l
+normal! zt
+25
+normal! 02|
+wincmd w
+argglobal
+edit ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/pin_config.c
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+silent! normal! zE
+let s:l = 50 - ((25 * winheight(0) + 33) / 66)
+if s:l < 1 | let s:l = 1 | endif
+exe s:l
+normal! zt
+50
+normal! 029|
+wincmd w
+2wincmd w
+exe 'vert 1resize ' . ((&columns * 125 + 125) / 251)
+exe 'vert 2resize ' . ((&columns * 125 + 125) / 251)
+tabedit ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/building-blocks/uart_driver.c
+set splitbelow splitright
+wincmd _ | wincmd |
+split
+1wincmd k
+wincmd _ | wincmd |
+vsplit
+1wincmd h
+wincmd w
+wincmd _ | wincmd |
+split
+1wincmd k
+wincmd w
+wincmd w
+set nosplitbelow
+set nosplitright
+wincmd t
+set winheight=1 winwidth=1
+exe '1resize ' . ((&lines * 55 + 34) / 68)
+exe 'vert 1resize ' . ((&columns * 125 + 125) / 251)
+exe '2resize ' . ((&lines * 27 + 34) / 68)
+exe 'vert 2resize ' . ((&columns * 125 + 125) / 251)
+exe '3resize ' . ((&lines * 27 + 34) / 68)
+exe 'vert 3resize ' . ((&columns * 125 + 125) / 251)
+exe '4resize ' . ((&lines * 10 + 34) / 68)
+argglobal
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+silent! normal! zE
+let s:l = 66 - ((24 * winheight(0) + 27) / 55)
+if s:l < 1 | let s:l = 1 | endif
+exe s:l
+normal! zt
+66
+normal! 063|
+wincmd w
+argglobal
+edit ~/projects/Embeddded-Systems-Labs/lab-stop-watch-with-FreeRTOS-tasks-STM32F4/Sources/MCU/stm32f401xe.h
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+silent! normal! zE
+let s:l = 683 - ((13 * winheight(0) + 13) / 27)
+if s:l < 1 | let s:l = 1 | endif
+exe s:l
+normal! zt
+683
+normal! 09|
+wincmd w
+argglobal
+edit Sources/building-blocks/uart_driver.h
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+silent! normal! zE
+let s:l = 23 - ((11 * winheight(0) + 13) / 27)
+if s:l < 1 | let s:l = 1 | endif
+exe s:l
+normal! zt
+23
+normal! 020|
+wincmd w
+argglobal
+enew
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+wincmd w
+exe '1resize ' . ((&lines * 55 + 34) / 68)
+exe 'vert 1resize ' . ((&columns * 125 + 125) / 251)
+exe '2resize ' . ((&lines * 27 + 34) / 68)
+exe 'vert 2resize ' . ((&columns * 125 + 125) / 251)
+exe '3resize ' . ((&lines * 27 + 34) / 68)
+exe 'vert 3resize ' . ((&columns * 125 + 125) / 251)
+exe '4resize ' . ((&lines * 10 + 34) / 68)
+tabnext 6
 set stal=1
 if exists('s:wipebuf')
   silent exe 'bwipe ' . s:wipebuf

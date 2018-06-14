@@ -121,7 +121,7 @@
 /**
  * CPU clock frequency in MHz
  */
-#define MCU_CPU_CLOCK_FREQ_IN_MHZ  UINT32_C(100)
+#define MCU_CPU_CLOCK_FREQ_IN_MHZ  UINT32_C(84)
 
 #else
 #error "No Microcontroller defined"
