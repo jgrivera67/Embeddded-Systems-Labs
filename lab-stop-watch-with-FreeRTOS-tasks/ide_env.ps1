@@ -1,4 +1,5 @@
-$env:path = "C:\Program Files (x86)\GNU Tools ARM Embedded\5.4 2016q3\bin;C:\Program Files (x86)\GNU Tools ARM Embedded\5.4 2016q3\arm-none-eabi\bin;$env:path"
+#$env:path = "C:\Program Files (x86)\GNU Tools ARM Embedded\5.4 2016q3\bin;C:\Program Files (x86)\GNU Tools ARM Embedded\5.4 2016q3\arm-none-eabi\bin;$env:path"
+$env:path = "C:\GNAT\2018-arm-elf\arm-eabi\bin;C:\GNAT\2018-arm-elf\bin;C:\GNAT\2018\bin;c:\perl64\bin;$env:path"
 
 $env:make = "C:\MinGW\msys\1.0\bin\make.exe"
 
