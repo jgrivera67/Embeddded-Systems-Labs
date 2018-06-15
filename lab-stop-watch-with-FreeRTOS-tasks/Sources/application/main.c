@@ -147,7 +147,7 @@ static void read_stopwatch_buttons(void)
 	c = console_getchar_non_blocking();
 	c = tolower(c);
     set_private_data_region(&g_stopwatch, sizeof(g_stopwatch), READ_WRITE, &old_region);
-	if (c == 's') {
+	if (c == 's' || c == ' ') {
 		g_stopwatch.running = !g_stopwatch.running;
 	} else if (c == 'r') {
 		reset_stopwatch();
@@ -250,7 +250,7 @@ int main(void)
 	 */
 	console_clear();
 	console_printf("Stop Watch with FreeRTOS tasks  (built " __DATE__ " " __TIME__ ")\n"
-	    	       "Buttons: s - start/stop    r - reset\n");
+	    	       "Buttons: s or <space> - start/stop    r - reset\n");
 
 	init_stopwatch();
 
