@@ -16,3 +16,67 @@ function my_build_all
     make
 }
 
+function update_flash
+{
+    typeset elf_file
+    typeset target_dir
+    typeset usage_msg
+
+    usage_msg="Usage: update_flash <elf file> <target dir>"
+
+    if [ $# != 2 ]; then
+        echo $usage_msg
+        return 1
+    fi
+
+    elf_file=$1
+    target_dir=$2
+
+    if [ ! -f $elf_file ]; then
+        echo "*** ERROR: file $elf_file does not exist"
+        return 1
+    fi
+
+    rm -f $elf_file.bin
+
+    echo "Generating $elf_file.bin ..."
+    objcopy -O binary -S $elf_file "$elf_file.bin"
+
+    if [ ! -f $elf_file.bin ]; then
+        echo "*** ERROR: file $elf_file.bin not created"
+        return 1;
+    fi
+
+    echo "Copying $elf_file.bin to flash ($target_dir) ..."
+    sudo cp $elf_file.bin $target_dir
+    sync
+}
+
+function gen_lst
+{
+    typeset elf_file
+    typeset usage_msg
+
+    usage_msg="Usage: gen_lst <elf file>"
+
+    if [ $# != 1 ]; then
+        echo $usage_msg
+        return 1
+    fi
+
+    if [ ! -f $elf_file ]; then
+        echo "*** ERROR: file $elf_file does not exist"
+        return 1
+    fi
+
+    rm -f $elf_file.lst
+
+    echo "Generating $elf_file.lst ..."
+    objdump -dSstl $elf_file > $elf_file.lst
+    if [ ! -f $elf_file.lst ]; then
+        echo "*** ERROR: file $elf_file.lst not created"
+        return 1;
+    fi
+}
+
+

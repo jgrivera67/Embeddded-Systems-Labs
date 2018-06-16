@@ -1,0 +1,131 @@
+project lab_stopwatch_with_freertos_tasks is
+
+   for Target use "arm-eabi";
+
+   for Languages use ("C");
+
+   for Main use ("main.c");
+
+   type MCU_Type is ("KINETIS_K64F", "STM32F401", "STM32F479");
+
+   MCU : MCU_Type := External ("MCU", "STM32F401");
+
+   type CPU_Architecture_Type is ("none", "Arm-Cortex-M0+", "Arm-Cortex-M4");
+
+   CPU_Architecture : CPU_Architecture_Type := "none";
+
+   Mcu_Cortex_M4_Switches := ("-mcpu=cortex-m4",
+			      "-mthumb",
+			      "-mlittle-endian",
+			      --"-mfloat-abi=softfp",
+			      "-mhard-float",
+			      "-mfpu=fpv4-sp-d16");
+
+   Mcu_Switches := ();
+   case MCU is
+      when "KINETIS_K64F"  =>
+	 CPU_Architecture := "Arm-Cortex-M4";
+	 Mcu_Switches := ("-DK64F");
+      when "STM32F401"  =>
+	 CPU_Architecture := "Arm-Cortex-M4";
+	 Mcu_Switches := ("-DSTM32F4_MCU");
+      when "STM32F479"  =>
+	 CPU_Architecture := "Arm-Cortex-M4";
+	 Mcu_Switches := ("-DSTM32F4_MCU");
+   end case;
+
+   FreeRTOS_Port_Subdir := "";
+   CPU_Architecture_Switches := ();
+   case CPU_Architecture is
+      when "Arm-Cortex-M0+" =>
+	 FreeRTOS_Port_Subdir := "GCC/ARM_CM0";
+	 CPU_Architecture_Switches := ("-mcpu=cortex-m0plus",
+			               "-mthumb",
+			               "-mlittle-endian");
+      when "Arm-Cortex-M4" =>
+	 FreeRTOS_Port_Subdir := "GCC/ARM_CM4F";
+	 CPU_Architecture_Switches := ("-mcpu=cortex-m4",
+			               "-mthumb",
+			               "-mlittle-endian",
+			               --"-mfloat-abi=softfp",
+			               "-mhard-float",
+			               "-mfpu=fpv4-sp-d16");
+      when others =>
+	 null;
+   end case;
+
+   for Source_Dirs use ("Sources/application",
+                        "Sources/building-blocks",
+                        "Sources/third_party/FreeRTOS/Source",
+                        "Sources/third_party/FreeRTOS/Source/portable/" & FreeRTOS_Port_Subdir,
+                        "Sources/MCU/" & MCU);
+
+   for Object_Dir use "obj";
+
+   for Exec_Dir  use ".";
+
+   package Naming is
+      for Spec_Suffix ("C") use ".h";
+      for Body_Suffix ("C") use ".c";
+   end Naming;
+
+   Executable_Prefix := "lab_stopwatch_with_freertos_tasks";
+   Common_Switches := ("-fno-omit-frame-pointer",
+                       "-ffunction-sections",
+                       "-fdata-sections",
+                       "-ffreestanding",
+                       -- "-fverbose-asm",
+                       "-std=gnu11",
+                       "-g",
+                       "-O0");
+
+   package Compiler is
+      Include_Switches := ("-I../Sources",
+	                   "-I../Sources/application",
+                           "-I../Sources/third_party/FreeRTOS/Source/include",
+	                   "-I../Sources/third_party/FreeRTOS/Source/portable/" & FreeRTOS_Port_Subdir,
+                           "-I../Sources/MCU",
+	                   "-I../Sources/MCU/CMSIS");
+
+      for Default_Switches ("C") use Common_Switches &
+                                     Include_Switches &
+                                     Mcu_Switches &
+                                     CPU_Architecture_Switches &
+                                     ("-Wall",
+                                      "-Wstrict-prototypes",
+                                      "-fms-extensions",
+                                      "-Wextra",
+                                      "-Wformat",
+                                      "-Wunreachable-code",
+                                      "-Wshadow",
+                                      "-Wmissing-prototypes",
+                                      "-Wpointer-arith",
+                                      "-Winline",
+                                      "-Werror",
+                                      "-Wstack-usage=224",
+                                      "-Wundef",
+                                      "-Wdouble-promotion",
+	                              "-DDEBUG");
+    end Compiler;
+
+   package Linker is
+      for Default_Switches ("C") use Common_Switches &
+                                     ("-nostartfiles",
+				      --"-nostdlib",
+				      --"-nolibc",
+				      "-Wl,-Map=" & Executable_Prefix & ".map",
+				      "-Xlinker", "--gc-sections",
+	                              "-T../Sources/MCU/" & MCU & "/memory_layout.ld");
+   end Linker;
+
+   package Builder is
+      for Executable ("main.c") use Executable_Prefix & ".elf";
+   end Builder;
+
+   package Ide is
+      for Program_Host use "localhost:4242";
+      for Communication_Protocol use "remote";
+   end Ide;
+
+end lab_stopwatch_with_freertos_tasks;
+
