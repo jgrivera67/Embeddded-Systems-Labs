@@ -1,3 +1,12 @@
+$base_dir = "$env:userprofile/MyProjects/EMBSYS/Embeddded-Systems-Labs"
+$project = "lab-stop-watch-with-FreeRTOS-tasks-STM32F4"
+$env:src_tree_dir = "$base_dir\$project"
+$env:src_db_dir = "$base_dir\$project`_src_database"
+$env:src_subdirs = ""
+$env:cscope_db = $env:src_db_dir + "\cscope.out"
+$env:cscope_root_dir = $env:src_tree_dir
+$env:cscope_root_dir_exports = ""
+
 $env:path = "C:\Program Files (x86)\GNU Tools ARM Embedded\5.4 2016q3\bin;C:\Program Files (x86)\GNU Tools ARM Embedded\5.4 2016q3\arm-none-eabi\bin;$env:path"
 
 $env:make = "C:\MinGW\msys\1.0\bin\make.exe"

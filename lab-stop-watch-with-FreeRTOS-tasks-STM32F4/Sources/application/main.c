@@ -6,6 +6,7 @@
  * @author: German Rivera
  */
 #include <building-blocks/pin_config.h>
+#include <building-blocks/gpio_driver.h>
 #include <building-blocks/serial_console.h>
 #include <building-blocks/runtime_checks.h>
 #include <building-blocks/compile_time_checks.h>
@@ -220,15 +221,14 @@ static void stop_watch_updater_task_func(void *arg)
 }
 
 
+static struct gpio_pin g_led_pin =
+	GPIO_PIN_INITIALIZER(PIN_PORT_A, 5, PIN_MODE_GPIO_OUTPUT,
+		             PIN_ALTERNATE_FUNCTION_NONE, true);
+
 static void init_led(void) {
-    struct pin_info pin_info =
-	PIN_INITIALIZER(PIN_PORT_A, 5, PIN_MODE_GPIO_OUTPUT,
-		        PIN_ALTERNATE_FUNCTION_NONE);
+    gpio_configure_pin(&g_led_pin, 0x0);
 
-    set_pin_function(&pin_info, 0x0);
-
-    volatile GPIO_TypeDef *port_regs_p = g_pin_port_regs[pin_info.pin_port];
-    port_regs_p->ODR |= BIT(pin_info.pin_index);
+    gpio_activate_output_pin(&g_led_pin);
 }
 
 int main(void)
@@ -243,7 +243,12 @@ int main(void)
     pin_config_init();
     init_led();//???
 
+    gpio_deactivate_output_pin(&g_led_pin); //???
+    for (unsigned int i = 0; i < 100000; i++)
+        ;
+    gpio_activate_output_pin(&g_led_pin); //???
     console_init(&g_console_task);
+    gpio_deactivate_output_pin(&g_led_pin); //???
 
     /*
      * Display greeting:

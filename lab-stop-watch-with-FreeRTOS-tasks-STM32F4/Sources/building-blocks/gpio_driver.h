@@ -15,10 +15,11 @@
 /**
  * Initializer for a gpio_pin structure
  */
-#define GPIO_PIN_INITIALIZER(_pin_port, _pin_index, _pin_function,             \
+#define GPIO_PIN_INITIALIZER(_pin_port, _pin_index, _pin_mode, _pin_function,  \
                              _pin_is_active_high)                              \
         {                                                                      \
-            .pin_info = PIN_INITIALIZER(_pin_port, _pin_index, _pin_function), \
+            .pin_info = PIN_INITIALIZER(_pin_port, _pin_index, _pin_mode,      \
+                                        _pin_function),                        \
             .pin_bit_mask = BIT(_pin_index),                                   \
             .pin_is_active_high = (_pin_is_active_high),                       \
         }
@@ -40,8 +41,7 @@ enum gpio_pin_irq_type {
     GPIO_PIN_IRQ_WHEN_LOGIC_ONE =     0xC,
 };
 
-void gpio_configure_pin(const struct gpio_pin *gpio_pin_p, uint32_t pin_flags,
-                        bool is_output);
+void gpio_configure_pin(const struct gpio_pin *gpio_pin_p, uint32_t pin_flags);
 
 void gpio_activate_output_pin(const struct gpio_pin *gpio_pin_p);
 
