@@ -3,8 +3,8 @@
  *
  * RTOS wrapper interface for uCOS-III
  *
- * @author German Rivera 
- */ 
+ * @author German Rivera
+ */
 #ifndef __RTOS_WRAPPER_H
 #define __RTOS_WRAPPER_H
 
@@ -103,25 +103,34 @@ struct rtos_task
 /**
  * Wrapper for an RTOS mutex object
  */
-struct rtos_mutex 
+struct rtos_mutex
 {
 #   define      MUTEX_SIGNATURE  GEN_SIGNATURE('M', 'U', 'T', 'X')
     uint32_t    mtx_signature;
     const char *mtx_name;
+    StaticSemaphore_t mtx_os_mutex_var;
 
-    SemaphoreHandle_t mtx_os_mutex; /* returned by xSemaphoreCreateMutex() */
+    /**
+     * Handle returned by xSemaphoreCreateMutexStatic()
+     */
+    SemaphoreHandle_t mtx_os_mutex_handle;
 };
 
 /**
  * Wrapper for an RTOS semaphore object
  */
-struct rtos_semaphore 
+struct rtos_semaphore
 {
 #   define      SEMAPHORE_SIGNATURE  GEN_SIGNATURE('S', 'E', 'M', 'A')
     uint32_t    sem_signature;
     const char *sem_name;
+    StaticSemaphore_t sem_os_semaphore_var;
 
-    SemaphoreHandle_t sem_os_semaphore; /* returned by xSemaphoreCreateCounting() */
+    /**
+     * Handle returned by xSemaphoreCreateBinaryStatic() or
+     * xSemaphoreCreateCountingStatic()
+     */
+    SemaphoreHandle_t sem_os_semaphore_handle;
 };
 
 struct rtos_timer;
@@ -139,9 +148,15 @@ struct rtos_timer
 #   define      TIMER_SIGNATURE  GEN_SIGNATURE('T', 'I', 'M', 'R')
     uint32_t    tmr_signature;
 
-	TimerHandle_t tmr_os_timer;
-	rtos_timer_callback_t *tmr_callback_p;
-	void *tmr_arg;
+    StaticTimer_t tmr_os_timer_var;
+
+    /**
+     * Handle returned by xTimerCreateStatic()
+     */
+    TimerHandle_t tmr_os_timer_handle;
+
+    rtos_timer_callback_t *tmr_callback_p;
+    void *tmr_arg;
 };
 
 /**
@@ -180,9 +195,9 @@ void rtos_task_semaphore_signal(struct rtos_task *rtos_task_p);
 
 void rtos_mutex_init(struct rtos_mutex *rtos_mutex_p,
                      const char *mutex_name_p);
- 
+
 void rtos_mutex_lock(struct rtos_mutex *rtos_mutex_p);
- 
+
 void rtos_mutex_unlock(struct rtos_mutex *rtos_mutex_p);
 
 bool rtos_mutex_is_mine(const struct rtos_mutex *rtos_mutex_p);
@@ -190,9 +205,9 @@ bool rtos_mutex_is_mine(const struct rtos_mutex *rtos_mutex_p);
 void rtos_semaphore_init(struct rtos_semaphore *rtos_semaphore_p,
                          const char *semaphore_name_p,
                          uint32_t initial_count);
- 
+
 void rtos_semaphore_wait(struct rtos_semaphore *rtos_semaphore_p);
- 
+
 bool rtos_semaphore_wait_timeout(struct rtos_semaphore *rtos_semaphore_p,
 		                         uint32_t timeout_ms);
 

@@ -14,13 +14,6 @@ project lab_stopwatch_with_freertos_tasks is
 
    CPU_Architecture : CPU_Architecture_Type := "none";
 
-   Mcu_Cortex_M4_Switches := ("-mcpu=cortex-m4",
-			      "-mthumb",
-			      "-mlittle-endian",
-			      --"-mfloat-abi=softfp",
-			      "-mhard-float",
-			      "-mfpu=fpv4-sp-d16");
-
    Mcu_Switches := ();
    case MCU is
       when "KINETIS_K64F"  =>
@@ -28,10 +21,10 @@ project lab_stopwatch_with_freertos_tasks is
 	 Mcu_Switches := ("-DK64F");
       when "STM32F401"  =>
 	 CPU_Architecture := "Arm-Cortex-M4";
-	 Mcu_Switches := ("-DSTM32F4_MCU");
+	 Mcu_Switches := ("-DSTM32F401_MCU");
       when "STM32F479"  =>
 	 CPU_Architecture := "Arm-Cortex-M4";
-	 Mcu_Switches := ("-DSTM32F4_MCU");
+	 Mcu_Switches := ("-DSTM32F479_MCU");
    end case;
 
    FreeRTOS_Port_Subdir := "";
@@ -47,8 +40,8 @@ project lab_stopwatch_with_freertos_tasks is
 	 CPU_Architecture_Switches := ("-mcpu=cortex-m4",
 			               "-mthumb",
 			               "-mlittle-endian",
-			               --"-mfloat-abi=softfp",
-			               "-mhard-float",
+			               "-mfloat-abi=softfp",
+			               --"-mhard-float",
 			               "-mfpu=fpv4-sp-d16");
       when others =>
 	 null;
@@ -56,6 +49,7 @@ project lab_stopwatch_with_freertos_tasks is
 
    for Source_Dirs use ("Sources/application",
                         "Sources/building-blocks",
+                        "Sources/building-blocks/" & MCU,
                         "Sources/third_party/FreeRTOS/Source",
                         "Sources/third_party/FreeRTOS/Source/portable/" & FreeRTOS_Port_Subdir,
                         "Sources/MCU/" & MCU);
@@ -111,8 +105,8 @@ project lab_stopwatch_with_freertos_tasks is
    package Linker is
       for Default_Switches ("C") use Common_Switches &
                                      ("-nostartfiles",
-				      --"-nostdlib",
-				      --"-nolibc",
+				      "-nostdlib",
+				      "-nolibc",
 				      "-Wl,-Map=" & Executable_Prefix & ".map",
 				      "-Xlinker", "--gc-sections",
 	                              "-T../Sources/MCU/" & MCU & "/memory_layout.ld");

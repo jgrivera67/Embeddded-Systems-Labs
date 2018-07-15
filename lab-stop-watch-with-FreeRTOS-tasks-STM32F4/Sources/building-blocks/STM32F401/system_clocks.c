@@ -7,56 +7,61 @@
  */
 #include "system_clocks.h"
 #include <stdint.h>
-#include <MCU/stm32f401xe.h>
+#include <MCU/STM32F401/stm32f401xe.h>
 #include "io_utils.h"
 
-
 /**
- *         The system Clock is configured as follow :
- *            System Clock source            = PLL (HSE)
- *            SYSCLK(Hz)                     = 100000000
- *            HCLK(Hz)                       = 100000000
- *            AHB Prescaler                  = 1
- *            APB1 Prescaler                 = 2
- *            APB2 Prescaler                 = 1
- *            HSE Frequency(Hz)              = 8000000
- *            PLL_M                          = 8
- *            PLL_N                          = 400
- *            PLL_P                          = 4
- *            VDD(V)                         = 3.3
- *            Main regulator output voltage  = Scale1 mode
- *            Flash Latency(WS)              = 3
- */
+  * @brief  System Clock Configuration
+  *         The system Clock is configured as follow:
+  *            System Clock source            = PLL (HSI)
+  *            SYSCLK(Hz)                     = 84000000
+  *            HCLK(Hz)                       = 84000000
+  *            AHB Prescaler                  = 1
+  *            APB1 Prescaler                 = 2
+  *            APB2 Prescaler                 = 1
+  *            HSI Frequency(Hz)              = 16000000
+  *            PLL_M                          = 16
+  *            PLL_N                          = 336
+  *            PLL_P                          = 4
+  *            PLL_Q                          = 7
+  *            VDD(V)                         = 3.3
+  *            Main regulator output voltage  = Scale2 mode
+  *            Flash Latency(WS)              = 2
+  * @param  None
+  * @retval None
+  */
 static void pll_init(void)
 {
     uint32_t reg_value;
 
-    /* Enable HSE external oscillator */
-    RCC->CR |= RCC_CR_HSEBYP;
-
-    /* Enable HSE crystal oscillator */
-    RCC->CR |= RCC_CR_HSEON;
+    /* Enable HSI internal oscillator */
+    RCC->CR |= RCC_CR_HSION;
     do {
         reg_value = RCC->CR;
-    } while ((reg_value & RCC_CR_HSERDY) == 0);
+    } while ((reg_value & RCC_CR_HSIRDY) == 0);
+
+    /* Adjusts the Internal High Speed oscillator (HSI) calibration value. */
+    reg_value = RCC->CR;
+    SET_BIT_FIELD(reg_value, RCC_CR_HSITRIM_Msk, RCC_CR_HSITRIM_Pos, 0x10);
+    RCC->CR = reg_value;
 
     /* Set FLASH latency */
     reg_value = FLASH->ACR;
     SET_BIT_FIELD(reg_value, FLASH_ACR_LATENCY_Msk, FLASH_ACR_LATENCY_Pos,
-                  FLASH_ACR_LATENCY_3WS);
+                  FLASH_ACR_LATENCY_2WS);
     FLASH->ACR = reg_value;
 
-    /* Main PLL configuration and activation */
+    /* Main PLL configuration and activation using HSI as clock source */
     reg_value = RCC->PLLCFGR;
-    reg_value |= RCC_PLLCFGR_PLLSRC_Msk;
-    /* PLL, PLLI2S and PLLSAI division factor by 8 */
-    SET_BIT_FIELD(reg_value, RCC_PLLCFGR_PLLM_Msk, RCC_PLLCFGR_PLLM_Pos, 8);
-    SET_BIT_FIELD(reg_value, RCC_PLLCFGR_PLLN_Msk, RCC_PLLCFGR_PLLN_Pos, 400);
+    reg_value &= ~RCC_PLLCFGR_PLLSRC; /* select HSI as source */
+    SET_BIT_FIELD(reg_value, RCC_PLLCFGR_PLLM_Msk, RCC_PLLCFGR_PLLM_Pos, 16);
+    SET_BIT_FIELD(reg_value, RCC_PLLCFGR_PLLN_Msk, RCC_PLLCFGR_PLLN_Pos, 336);
+    SET_BIT_FIELD(reg_value, RCC_PLLCFGR_PLLP_Msk, RCC_PLLCFGR_PLLP_Pos, 4);
+    SET_BIT_FIELD(reg_value, RCC_PLLCFGR_PLLQ_Msk, RCC_PLLCFGR_PLLQ_Pos, 7);
     RCC->PLLCFGR = reg_value;
 
     /* Main PLL division factor for PLLP output by 4 */
     reg_value = RCC->PLLCFGR;
-    SET_BIT_FIELD(reg_value, RCC_PLLCFGR_PLLP_Msk, RCC_PLLCFGR_PLLP_Pos, 1);
     RCC->PLLCFGR = reg_value;
 
     /* Enable PLL: */
@@ -65,7 +70,7 @@ static void pll_init(void)
         reg_value = RCC->CR;
     } while ((reg_value & RCC_CR_PLLRDY) == 0);
 
-    /* Sysclk activation on the main PLL */
+    /* Sysclk activation on the main PLL and AHB */
     reg_value = RCC->CFGR;
     SET_BIT_FIELD(reg_value, RCC_CFGR_HPRE_Msk, RCC_CFGR_HPRE_Pos, RCC_CFGR_HPRE_DIV1);
     RCC->CFGR = reg_value;
@@ -79,7 +84,7 @@ static void pll_init(void)
     } while (GET_BIT_FIELD(reg_value, RCC_CFGR_SWS_Msk, RCC_CFGR_SWS_Pos) !=
 	     RCC_CFGR_SWS_PLL);
 
-    /* Set APB1 & APB2 prescalers */
+    /* Set APB1 and APB2 prescalers */
     reg_value = RCC->CFGR;
     SET_BIT_FIELD(reg_value, RCC_CFGR_PPRE1_Msk, RCC_CFGR_PPRE1_Pos,
 	          RCC_CFGR_PPRE1_DIV2);
@@ -120,5 +125,4 @@ void system_clocks_init(void)
      */
     pll_init();
 }
-
 

@@ -60,9 +60,9 @@ struct byte_ring_buffer
      * Consumer-side semaphore
      */
     struct rtos_semaphore consumer_semaphore;
-} __attribute__ ((aligned(2*MPU_REGION_ALIGNMENT)));
+} __attribute__ ((aligned(8*MPU_REGION_ALIGNMENT)));
 
-C_ASSERT(sizeof(struct byte_ring_buffer) == 2*MPU_REGION_ALIGNMENT);
+C_ASSERT(sizeof(struct byte_ring_buffer) == 8*MPU_REGION_ALIGNMENT);
 
 void byte_ring_buffer_init(struct byte_ring_buffer *ring_buffer_p,
                            uint8_t *data_area_p,

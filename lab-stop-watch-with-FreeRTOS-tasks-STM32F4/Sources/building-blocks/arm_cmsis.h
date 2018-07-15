@@ -19,7 +19,7 @@
 #elif defined(K64F_MCU)
 #include <MK64F12.h>
 #include <core_cm4.h>
-#elif defined(STM32F4_MCU)
+#elif defined(STM32F401_MCU)
 #include <stm32f401xe.h>
 #include <core_cm4.h>
 #else

@@ -12,12 +12,13 @@
 #include "arm_cmsis.h"
 #include "arm_cortex_m_defs.h"
 
+#if defined(KL25Z_MCU)
+
 /**
  * NOR Flash base address
  */
 #define MCU_FLASH_BASE_ADDR    UINT32_C(0x0)
 
-#if defined(KL25Z_MCU)
 /**
  * NOR Flash size in bytes
  */
@@ -44,6 +45,12 @@
 #define MCU_CPU_CLOCK_FREQ_IN_MHZ  UINT32_C(48)
 
 #elif defined(KL28Z_MCU)
+
+/**
+ * NOR Flash base address
+ */
+#define MCU_FLASH_BASE_ADDR    UINT32_C(0x0)
+
 /**
  * NOR Flash size in bytes
  */
@@ -96,7 +103,14 @@
  */
 #define MCU_CPU_CLOCK_FREQ_IN_MHZ  UINT32_C(120)
 
-#elif defined(STM32F4_MCU)
+#elif defined(STM32F401_MCU)
+
+#include "stm32f401xe.h"
+
+/**
+ * NOR Flash base address
+ */
+#define MCU_FLASH_BASE_ADDR    UINT32_C(0x08000000)
 
 /**
  * NOR Flash size in bytes
@@ -123,6 +137,9 @@
  */
 #define MCU_CPU_CLOCK_FREQ_IN_MHZ  UINT32_C(84)
 
+#define AHB_CLOCK_FREQ_IN_HZ	   MCU_CPU_CLOCK_FREQ_IN_HZ
+#define APB1_CLOCK_FREQ_IN_HZ	   (MCU_CPU_CLOCK_FREQ_IN_HZ / 2)
+#define APB2_CLOCK_FREQ_IN_HZ	   MCU_CPU_CLOCK_FREQ_IN_HZ
 #else
 #error "No Microcontroller defined"
 #endif

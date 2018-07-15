@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include "runtime_checks.h"
 #include "microcontroller.h"
+#include "pin_config.h"
 
 /**
  *  Default UART transmission mode: 8-bits, no-parity, 1 stop bit
@@ -25,9 +26,9 @@ struct uart_device {
     uint32_t urt_signature;
     struct uart_device_var *urt_var_p;
     USART_TypeDef *urt_mmio_regs_p;
-    volatile uint32_t *urt_mmio_tx_port_pcr_p;
-    volatile uint32_t *urt_mmio_rx_port_pcr_p;
-    uint32_t urt_mmio_pin_mux_selector_mask;
+    struct pin_info urt_tx_pin;
+    struct pin_info urt_rx_pin;
+    volatile uint32_t *urt_mmio_clock_gate_reg_p;
     uint32_t urt_mmio_clock_gate_mask;
     uint32_t urt_source_clock_freq_in_hz;
     IRQn_Type urt_irq_num;

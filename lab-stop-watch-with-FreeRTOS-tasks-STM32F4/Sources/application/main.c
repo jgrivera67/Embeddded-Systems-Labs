@@ -9,6 +9,7 @@
 #include <building-blocks/serial_console.h>
 #include <building-blocks/runtime_checks.h>
 #include <building-blocks/compile_time_checks.h>
+#include <building-blocks/io_utils.h>
 #include <building-blocks/rtos_wrapper.h>
 #include <building-blocks/memory_protection_unit.h>
 #include <stddef.h>
@@ -219,6 +220,17 @@ static void stop_watch_updater_task_func(void *arg)
 }
 
 
+static void init_led(void) {
+    struct pin_info pin_info =
+	PIN_INITIALIZER(PIN_PORT_A, 5, PIN_MODE_GPIO_OUTPUT,
+		        PIN_ALTERNATE_FUNCTION_NONE);
+
+    set_pin_function(&pin_info, 0x0);
+
+    volatile GPIO_TypeDef *port_regs_p = g_pin_port_regs[pin_info.pin_port];
+    port_regs_p->ODR |= BIT(pin_info.pin_index);
+}
+
 int main(void)
 {
     mpu_init();
@@ -229,6 +241,7 @@ int main(void)
 	 */
     //mpu_enable();
     pin_config_init();
+    init_led();//???
 
     console_init(&g_console_task);
 

@@ -16,11 +16,12 @@
 /**
  * Initializer for a pin_info structure
  */
-#define PIN_INITIALIZER(_pin_port, _pin_index, _pin_function)                  \
+#define PIN_INITIALIZER(_pin_port, _pin_index, _pin_mode, _pin_function)       \
         {                                                                      \
             .pin_port = (_pin_port),                                           \
             .pin_index = (_pin_index),                                         \
-            .pin_function = (_pin_function),                                   \
+            .pin_mode = (_pin_mode),                                           \
+            .pin_alternate_function = (_pin_function),                         \
         }
 
 /**
@@ -69,6 +70,8 @@ enum pin_alternate_functions {
     PIN_ALTERNATE_FUNCTION13,
     PIN_ALTERNATE_FUNCTION14,
     PIN_ALTERNATE_FUNCTION15,
+
+    PIN_ALTERNATE_FUNCTION_NONE
 };
 
 typedef enum pin_alternate_functions pin_alternate_function_t;
