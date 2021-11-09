@@ -1,0 +1,248 @@
+### Eclipse Workspace Patch 1.0
+#P lab3-layers2and1
+diff --git QUESTIONS.txt QUESTIONS.txt
+index c8075aa..598b87b 100644
+--- QUESTIONS.txt
++++ QUESTIONS.txt
+@@ -5,36 +5,67 @@
+ 1. What register of the K64F's Ethernet MAC (ENET module) is used
+    to send commands the Ethernet PHY over the MDIO bus?
+   
+-  Hint: See also section 45.4 of the "K64 Sub-Family Reference Manual"
++   Hint: See also section 45.4 of the "K64 Sub-Family Reference Manual"
+   (file "Labs\Doc\SoC\K64P144M120SF5RM.pdf").
++  
++   ANSWER:
++   The MII Management Frame Register (ENET_MMFR) 
+   
+ 2. What register of the  of the K64F's Ethernet MAC and which bit in this register
+    is used to detect when the Ethernet PHY has finished executing a command that 
+    was sent by the Ethernet MAC?
++   
++   ANSWER:
++   The Interrupt Event Register (ENET_EIR) MII bit (bit 23)
+    
+ 3. How are Ethernet PHY's registers read by software running on
+    the Kinetis K64F micrcontroller?   
+ 
+    Hint: What does function ethernet_phy_mdio_read_nolock() do?
+    
++   ANSWER:
++   By sending a "read frame operation for a valid MII
++   management frame" command to the PHY, using the MMFR register.
++   
+ 4. How are Ethernet PHY's registers written by software running on
+    the Kinetis K64F micrcontroller?   
+ 
+    Hint: What does function ethernet_phy_mdio_write_nolock() do?
++   
++   ANSWER:
++   By sending a "write frame operation for a valid MII management frame"
++   command to the PHY, using the MMFR register.
+ 
+ 5. What MAC address is used to send a packet to all nodes in the same
+    Ethernet LAN?
++  
++   ANSWER:
++   The broadcast MAC address: ff:ff:ff:ff:ff:ff 
+    
+ 6. How is the transmission of an Ethernet frame started?
+ 
+    Hint: What are the major steps performed by function 
+    ethernet_mac_start_xmit() in ethernet_mac.c?
+-   
+-7. How do we tell the Ethernet MAC in the K64F micrcontroller what
++  
++   ANSWER:
++   - Mark the frame's buffer descriptor as "ready for transmission":
++   - Re-activate Tx buffer descriptor ring, to start transmitting the frame.
++     (The Tx descriptor ring must have at least one descriptor with the "ready"
++      bit set in its control field)
++     
++ 7. How do we tell the Ethernet MAC in the K64F micrcontroller what
+    buffers it can use to recceive arriving Ethernet frames?
+    
+    Hint: What are the major steps performed by function 
+    ethernet_mac_rx_buffer_descriptor_ring_init()
++   
++   ANSWER:
++   Configure Rx buffer descriptor ring:
++   - Set Rx descriptor ring start address
++   - Set max receive buffer size in bytes
++   - Initialize Rx buffer descriptors. For each Rx buffer descriptor d do:
++     + Mark descriptor d as "available for reception"
++     + Enable generation of receive interrupts for descriptor d
+    
+ 8. The ARP cache only has space for a limited number of entries (16 in our 
+    case). So, if we receive an ARP reply for an IP address that is
+@@ -42,4 +73,10 @@
+    old entry with a new one. How do we decide what entry to overwrite?
+    
+    Hint: Look at the code function arp_cache_lookup_or_allocate() in
+-   networking_layer3_ipv4.c
+\ No newline at end of file
++   networking_layer3_ipv4.c
++   
++   ANSWER:
++   We ovewrite the least recently used entry in the ARP cache. To know which entry
++   is the least recently used entry, we keep a timestamp for each entry. This
++   timestamp is updated every time that a successful lookup is done for that 
++   entry.
+\ No newline at end of file
+diff --git Sources/building-blocks/ethernet_phy.c Sources/building-blocks/ethernet_phy.c
+index d175853..0dc5b08 100644
+--- Sources/building-blocks/ethernet_phy.c
++++ Sources/building-blocks/ethernet_phy.c
+@@ -121,19 +121,8 @@
+     .rmii_txd0_pin = PIN_INITIALIZER(PIN_PORT_A, 16, PIN_FUNCTION_ALT4),
+     .rmii_txd1_pin = PIN_INITIALIZER(PIN_PORT_A, 17, PIN_FUNCTION_ALT4),
+     .mii_txer_pin = PIN_INITIALIZER(PIN_PORT_A, 28, PIN_FUNCTION_ALT4),
+-	/*
+-	 * TODO-lab3: Complete the initializers for the remaining pins, shown
+-	 * below:
+-	 * .rmii_mdio_pin = PIN_INITIALIZER( , , ),
+-	 * .rmii_mdc_pin = PIN_INITIALIZER( , , ),
+-	 *
+-	 * See slide "Background (13)" and document
+-	 * "lab3-layers2and1\Doc\FRDM-K64F_PKG.xlsx". In this doc,
+-	 * find the column with the pin signal name (pin function).
+-	 * The head of this column is the "ALTx" function to use and
+-	 * the "port and pin" information can be inferred from column
+-	 * "Pin Name", in the same row. For example, PTB1 means port B, pin 1.)
+-	 */
++    .rmii_mdio_pin = PIN_INITIALIZER(PIN_PORT_B, 0, PIN_FUNCTION_ALT4),
++    .rmii_mdc_pin = PIN_INITIALIZER(PIN_PORT_B, 1, PIN_FUNCTION_ALT4),
+ };
+ 
+ 
+@@ -343,11 +332,6 @@
+      * Set GPIO pins for Ethernet PHY MII management (MDIO) functions:
+      */
+ 
+-    /*
+-     * TODO-lab3: Enable this code block by removing the #if0/#endif directives,
+-     * after resolving the TODO at line 124
+-     */
+-#if 0
+     set_pin_function(&ethernet_phy_p->rmii_mdc_pin, 0);
+ 
+     /*
+@@ -362,7 +346,6 @@
+                      PORT_PCR_ODE_MASK |
+                      PORT_PCR_PE_MASK |
+                      PORT_PCR_PS_MASK);
+-#endif
+ }
+ 
+ 
+@@ -473,19 +456,10 @@
+ 	struct ethernet_phy_device_var *const phy_var_p = ethernet_phy_p->var_p;
+ 
+ 	D_ASSERT(phy_var_p->initialized);
++    uint32_t reg_value = ethernet_phy_mdio_read(ethernet_phy_p,
++                                                ETHERNET_PHY_STATUS_REG);
+ 
+-    /*
+-	 * TODO-lab3: Implement function ethernet_phy_link_is_up()
+-	 * - Read the PHY's basic status register (ETHERNET_PHY_STATUS_REG)
+-	 *   using the ethernet_phy_mdio_read() function.
+-	 * - Check the link status bit in this register, to determine if
+-	 *   the link is up or down.
+-	 * - Return true if link is up, and false otherwise.
+-	 *
+-	 * HINT: To know what bit to check see page 31 of the Micrel PHY data
+-	 * sheet (file "lab3-layers2and1\Doc\Micrel-Ethernet-PHY-KSZ8081RNA-RND.pdf").
+-	 */
+-    return  false;
++    return (reg_value & ETHERNET_PHY_LINK_UP_MASK) != 0;
+ }
+ 
+ 
+diff --git Sources/building-blocks/networking_layer2.c Sources/building-blocks/networking_layer2.c
+index c8464e4..d50ef80 100644
+--- Sources/building-blocks/networking_layer2.c
++++ Sources/building-blocks/networking_layer2.c
+@@ -69,14 +69,8 @@
+      * Ensure special bits of first byte of the MAC address are properly
+      * set:
+      */
+-    /*
+-     * TODO-lab3: Ensure that bits 0 and 1 of mac_addr_p->bytes[0] are
+-     * set appropriately:
+-     * - Ensure that bit 0 (bit mask 0x1) of mac_addr_p->bytes[0] is set to 0
+-     *   (unicast address)
+-     * - Ensure that bit 1 (bit mask 0x2) of mac_addr_p->bytes[0] is set to 1
+-     *   (locally administered address)
+-     */
++    mac_addr_p->bytes[0] &= ~MAC_MULTICAST_ADDRESS_MASK;
++    mac_addr_p->bytes[0] |= MAC_PRIVATE_ADDRESS_MASK;
+ }
+ 
+ 
+@@ -696,13 +690,7 @@
+ #endif
+ 
+     COPY_MAC_ADDRESS(&tx_frame_p->ethernet_header.dest_mac_addr, dest_mac_addr_p);
+-
+-    /*
+-     * TODO-lab3: Fill the 'frame type' field of the Ethernet header with
+-     * the value 'frame_type' in network byte order:
+-     *
+-     * tx_frame_p->ethernet_header.frame_type = ...;
+-     */
++    tx_frame_p->ethernet_header.frame_type = hton16(frame_type);
+ 
+     tx_packet_p->total_length = sizeof(struct ethernet_header) +
+                                 data_payload_length;
+diff --git Sources/building-blocks/networking_layer3_ipv4.c Sources/building-blocks/networking_layer3_ipv4.c
+index 9b4635d..49b3053 100644
+--- Sources/building-blocks/networking_layer3_ipv4.c
++++ Sources/building-blocks/networking_layer3_ipv4.c
+@@ -213,18 +213,11 @@
+ 
+     net_layer2_get_mac_addr(layer2_end_point_p, &local_mac_address);
+ 
+-    /*
+-     * TODO-lab3: Fill the following ARP header fields for an ARP request:
+-     *
+-     * arp_packet_p->link_addr_type = ...;
+-     * arp_packet_p->network_addr_type = ...;
+-     * arp_packet_p->link_addr_size = ...;
+-     * arp_packet_p->network_addr_size = ...;
+-     * arp_packet_p->operation = ...;
+-     *
+-     * NOTE: Look at the declaration of 'struct arp_packet' and remember to
+-     * use hton16() to convert values to network byte order, for 16-bit fields.
+-     */
++    arp_packet_p->link_addr_type = hton16(0x1);
++    arp_packet_p->network_addr_type = hton16(FRAME_TYPE_IPv4_PACKET);
++    arp_packet_p->link_addr_size = sizeof(struct ethernet_mac_address);
++    arp_packet_p->network_addr_size = sizeof(struct ipv4_address);
++    arp_packet_p->operation = hton16(ARP_REQUEST);
+ 
+     COPY_MAC_ADDRESS(&arp_packet_p->source_mac_addr, &local_mac_address);
+     COPY_UNALIGNED_IPv4_ADDRESS(&arp_packet_p->source_ip_addr, source_ip_addr_p);
+@@ -281,18 +274,11 @@
+                      &local_mac_address);
+ #endif
+ 
+-    /*
+-     * TODO-lab3: Fill the following ARP header fields for an ARP reply:
+-     *
+-     * arp_packet_p->link_addr_type = ...;
+-     * arp_packet_p->network_addr_type = ...;
+-     * arp_packet_p->link_addr_size = ...;
+-     * arp_packet_p->network_addr_size = ...;
+-     * arp_packet_p->operation = ...;
+-     *
+-     * NOTE: Look at the declaration of 'struct arp_packet' and remember to
+-     * use hton16() to convert values to network byte order, for 16-bit fields.
+-     */
++    arp_packet_p->link_addr_type = hton16(0x1);
++    arp_packet_p->network_addr_type = hton16(FRAME_TYPE_IPv4_PACKET);
++    arp_packet_p->link_addr_size = sizeof(struct ethernet_mac_address);
++    arp_packet_p->network_addr_size = sizeof(struct ipv4_address);
++    arp_packet_p->operation = hton16(ARP_REPLY);
+ 
+     COPY_MAC_ADDRESS(&arp_packet_p->source_mac_addr, &local_mac_address);
+     COPY_UNALIGNED_IPv4_ADDRESS(&arp_packet_p->source_ip_addr, source_ip_addr_p);

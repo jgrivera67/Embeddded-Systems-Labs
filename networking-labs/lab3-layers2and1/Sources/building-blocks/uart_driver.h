@@ -1,0 +1,60 @@
+/**
+ * @file uart_driver.c
+ *
+ * UART driver interface
+ *
+ * @author German Rivera
+ */
+#ifndef SOURCES_BUILDING_BLOCKS_UART_DRIVER_H_
+#define SOURCES_BUILDING_BLOCKS_UART_DRIVER_H_
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <MK64F12.h>
+#include "runtime_checks.h"
+#include "pin_config.h"
+
+/**
+ *  Default UART transmission mode: 8-bits, no-parity, 1 stop bit
+ */
+#define UART_DEFAULT_MODE        UINT8_C(0)
+
+/**
+ * Const fields of a UART device (to be placed in flash)
+ */
+struct uart_device {
+#   define UART_DEVICE_SIGNATURE  GEN_SIGNATURE('U', 'A', 'R', 'T')
+    uint32_t urt_signature;
+    struct uart_device_var *urt_var_p;
+    UART_Type *urt_mmio_regs_p;
+    struct pin_info urt_tx_pin;
+    struct pin_info urt_rx_pin;
+    bool urt_rx_pin_pullup_resistor_enabled;
+    volatile uint32_t *urt_mmio_clock_gate_reg_p;
+    uint32_t urt_mmio_clock_gate_mask;
+    uint32_t urt_source_clock_freq_in_hz;
+	IRQn_Type urt_rx_tx_irq_num;
+	IRQn_Type urt_error_irq_num;
+};
+
+
+void uart_init(
+        const struct uart_device *uart_device_p,
+        uint32_t baud,
+        uint8_t mode);
+
+void uart_stop(const struct uart_device *uart_device_p);
+
+void uart_putchar(
+    const struct uart_device *uart_device_p,
+    uint8_t c);
+
+uint8_t uart_getchar(const struct uart_device *uart_device_p);
+
+uint8_t uart_getchar_with_polling(const struct uart_device *uart_device_p);
+
+int uart_getchar_non_blocking(const struct uart_device *uart_device_p);
+
+extern const struct uart_device g_uart_devices[];
+
+#endif /* SOURCES_BUILDING_BLOCKS_UART_DRIVER_H_ */

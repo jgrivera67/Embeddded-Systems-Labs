@@ -1,0 +1,80 @@
+### Eclipse Workspace Patch 1.0
+#P lab1-layer4
+diff --git QUESTIONS.txt QUESTIONS.txt
+index 9294189..c89b278 100644
+--- QUESTIONS.txt
++++ QUESTIONS.txt
+@@ -3,7 +3,12 @@
+ 
+ 1. How is a UDP end-point uniquely identified within a given network node?
+ 
++ANSWER:
++UDP port number
++
+ 2. What does the networking stack do when it receives a UDP datagram, from a remote
+    node, and there is no local UDP end point bound to the destination port specified
+    in the datagram? Where does the datagram go?
+ 
++ANSWER:
++THe UDP datagram is dropped
+diff --git Sources/building-blocks/networking_layer4_udp.c Sources/building-blocks/networking_layer4_udp.c
+index e07c0fc..c3a7f6f 100644
+--- Sources/building-blocks/networking_layer4_udp.c
++++ Sources/building-blocks/networking_layer4_udp.c
+@@ -99,14 +99,9 @@
+         }
+     }
+ 
+-    /*
+-     * TODO: Bind the UDP port to the layer-4 end point:
+-     * - Set 'layer4_end_point_p->layer4_port' to udp_port
+-     * - Add the UDP end point to the list of bound UDP end points,
+-     *   by calling net_layer4_end_point_list_add() for the
+-     *   'layer4_udp_p->local_udp_end_point_list' list.
+-     */
+-
++    layer4_end_point_p->layer4_port = udp_port;
++    net_layer4_end_point_list_add(&layer4_udp_p->local_udp_end_point_list,
++                                   layer4_end_point_p);
+     error = 0;
+ 
+ common_exit:
+@@ -196,14 +191,10 @@
+     struct udp_header *udp_header_p =
+         (struct udp_header *)GET_IPV4_DATA_PAYLOAD_AREA(tx_packet_p);
+ 
+-    /*
+-     * TODO: Set the following fields of the structure pointed to
+-     * by udp_header_p:
+-     * - source_port
+-     * - dest_port
+-     * - datagram_length (need to convert it to big endian after calculating it.
+-     *                    Hint: call hton16())
+-     */
++    udp_header_p->source_port = layer4_end_point_p->layer4_port;
++    udp_header_p->dest_port = dest_port;
++    udp_header_p->datagram_length = hton16(sizeof(struct udp_header) +
++                                           data_payload_length);
+ 
+     /*
+      * NOTE: udp_header_p->datagram_checksum is filled by the Ethernet MAC
+@@ -311,15 +302,13 @@
+ static struct net_layer4_end_point *
+ lookup_local_udp_end_point(struct net_layer4_udp *layer4_udp_p, uint16_t udp_port)
+ {
+-    struct net_layer4_end_point *layer4_end_point_p = NULL;
++    struct net_layer4_end_point *layer4_end_point_p;
+ 
+     rtos_mutex_lock(&layer4_udp_p->mutex);
+ 
+-    /*
+-     * TODO: Do the lookup by calling net_layer4_end_point_list_lookup() for
+-     *  the 'layer4_udp_p->local_udp_end_point_list' list and 'udp_port'..
+-     *  Save the result in 'layer4_end_point_p'
+-     */
++    layer4_end_point_p =
++        net_layer4_end_point_list_lookup(&layer4_udp_p->local_udp_end_point_list,
++                                         udp_port);
+ 
+     rtos_mutex_unlock(&layer4_udp_p->mutex);
+     return layer4_end_point_p;

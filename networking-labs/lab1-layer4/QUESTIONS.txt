@@ -1,0 +1,14 @@
+Read the code of files networking_layer4_udp.c and networking_layer4.c and
+and answer the following questions:
+
+1. How is a UDP end-point uniquely identified within a given network node?
+
+ANSWER:
+UDP port number
+
+2. What does the networking stack do when it receives a UDP datagram, from a remote
+   node, and there is no local UDP end point bound to the destination port specified
+   in the datagram? Where does the datagram go?
+
+ANSWER:
+THe UDP datagram is dropped

@@ -1,0 +1,108 @@
+### Eclipse Workspace Patch 1.0
+#P lab2-layer3
+diff --git Sources/building-blocks/networking_layer3_ipv4.c Sources/building-blocks/networking_layer3_ipv4.c
+index ad15d59..49b3053 100644
+--- Sources/building-blocks/networking_layer3_ipv4.c
++++ Sources/building-blocks/networking_layer3_ipv4.c
+@@ -556,11 +556,7 @@
+     ipv4_header_p->source_ip_addr.value =
+         layer3_end_point_p->ipv4.local_ip_addr.value;
+ 
+-    /*
+-     * TODO-Lab2: Copy the destination IP address from *dest_ip_addr_p
+-     * to the corresponding field in the IPv4 header pointed to by
+-     * ipv4_header_p
+-     */
++    ipv4_header_p->dest_ip_addr.value = dest_ip_addr_p->value;
+ 
+     /*
+      * NOTE: enet_frame->ipv4_header.header_checksum is computed by hardware.
+@@ -651,10 +647,8 @@
+     struct icmpv4_header *icmp_header_p =
+     (struct icmpv4_header *)GET_IPV4_DATA_PAYLOAD_AREA(tx_packet_p);
+ 
+-    /*
+-     * TODO-Lab2: Fill the msg_type and msg_code fields of the ICMP header
+-     * pointed to by icmp_header_p.
+-     */
++    icmp_header_p->msg_type = msg_type;
++    icmp_header_p->msg_code = msg_code;
+ 
+     /*
+      * NOTE: icmp_header_p->msg_checksum is computed by hardware.
+@@ -665,14 +659,10 @@
+     /*
+      * Send IP packet:
+      */
+-    /*
+-     * TODO-Lab2: Set the 4th parameter to the right value
+-     * to send an ICMP message
+-     */
+     return net_layer3_send_ipv4_packet(dest_ip_addr_p,
+                                        tx_packet_p,
+                                        sizeof(struct icmpv4_header) + data_payload_length,
+-                                       -1);
++                                       IP_PACKET_TYPE_ICMP);
+ }
+ 
+ 
+@@ -863,15 +853,10 @@
+ 
+     echo_msg_p->identifier = ping_request_msg_p->identifier;
+     echo_msg_p->seq_num = ping_request_msg_p->seq_num;
+-
+-    /*
+-     * TODO-Lab2: Set the 3rd and 4th parameters to the right values
+-     * to send a ping reply
+-     */
+     net_layer3_send_ipv4_icmp_message(dest_ip_addr_p,
+                                       tx_packet_p,
+-                                      -1,
+-                                      -1,
++                                      ICMP_TYPE_PING_REPLY,
++                                      ICMP_CODE_PING_REPLY,
+                                       sizeof(struct icmpv4_echo_message) -
+                                          sizeof(struct icmpv4_header));
+ }
+@@ -1317,20 +1302,12 @@
+     switch (ipv4_header_p->protocol_type) {
+     case IP_PACKET_TYPE_ICMP:
+         rx_packet_p->state_flags |= NET_PACKET_IN_ICMP_QUEUE;
+-        /*
+-         * TODO-Lab2: Add the received packet pointed to by rx_packet_p to
+-         * the ICMPv4 packet queue
+-         *
+-         * HINT: Call net_packet_queue_add() for the
+-         * the 'layer3_end_point_p->ipv4.rx_icmpv4_packet_queue' queue.
+-         */
++        net_packet_queue_add(&layer3_end_point_p->ipv4.rx_icmpv4_packet_queue,
++                             rx_packet_p);
+         break;
+ 
+     case IP_PACKET_TYPE_UDP:
+-    	/*
+-    	 * TODO-Lab2: Call net_layer4_process_incoming_udp_datagram()
+-    	 * for the received packet pointed to by rx_packet_p
+-    	 */
++        net_layer4_process_incoming_udp_datagram(rx_packet_p);
+         break;
+ 
+ #if 0
+@@ -1555,15 +1532,10 @@
+ 
+     echo_msg_p->identifier = identifier;
+     echo_msg_p->seq_num = seq_num;
+-
+-    /*
+-     * TODO-Lab2: Set the 3rd and 4th parameters to the right values
+-     * to send a ping request
+-     */
+     error = net_layer3_send_ipv4_icmp_message(dest_ip_addr_p,
+                                               tx_packet_p,
+-                                              -1,
+-                                              -1,
++                                              ICMP_TYPE_PING_REQUEST,
++                                              ICMP_CODE_PING_REQUEST,
+                                               sizeof(struct icmpv4_echo_message) -
+                                                   sizeof(struct icmpv4_header));
+     if (error != 0) {

@@ -1,0 +1,82 @@
+Read the code of fucntions ethernet_phy_mdio_write_nolock() and
+ethernet_phy_mdio_read_nolock() in ethernet_phy.c and answer the
+following questions:
+
+1. What register of the K64F's Ethernet MAC (ENET module) is used
+   to send commands the Ethernet PHY over the MDIO bus?
+  
+   Hint: See also section 45.4 of the "K64 Sub-Family Reference Manual"
+  (file "Labs\Doc\SoC\K64P144M120SF5RM.pdf").
+  
+   ANSWER:
+   The MII Management Frame Register (ENET_MMFR) 
+  
+2. What register of the  of the K64F's Ethernet MAC and which bit in this register
+   is used to detect when the Ethernet PHY has finished executing a command that 
+   was sent by the Ethernet MAC?
+   
+   ANSWER:
+   The Interrupt Event Register (ENET_EIR) MII bit (bit 23)
+   
+3. How are Ethernet PHY's registers read by software running on
+   the Kinetis K64F micrcontroller?   
+
+   Hint: What does function ethernet_phy_mdio_read_nolock() do?
+   
+   ANSWER:
+   By sending a "read frame operation for a valid MII
+   management frame" command to the PHY, using the MMFR register.
+   
+4. How are Ethernet PHY's registers written by software running on
+   the Kinetis K64F micrcontroller?   
+
+   Hint: What does function ethernet_phy_mdio_write_nolock() do?
+   
+   ANSWER:
+   By sending a "write frame operation for a valid MII management frame"
+   command to the PHY, using the MMFR register.
+
+5. What MAC address is used to send a packet to all nodes in the same
+   Ethernet LAN?
+  
+   ANSWER:
+   The broadcast MAC address: ff:ff:ff:ff:ff:ff 
+   
+6. How is the transmission of an Ethernet frame started?
+
+   Hint: What are the major steps performed by function 
+   ethernet_mac_start_xmit() in ethernet_mac.c?
+  
+   ANSWER:
+   - Mark the frame's buffer descriptor as "ready for transmission":
+   - Re-activate Tx buffer descriptor ring, to start transmitting the frame.
+     (The Tx descriptor ring must have at least one descriptor with the "ready"
+      bit set in its control field)
+     
+ 7. How do we tell the Ethernet MAC in the K64F micrcontroller what
+   buffers it can use to recceive arriving Ethernet frames?
+   
+   Hint: What are the major steps performed by function 
+   ethernet_mac_rx_buffer_descriptor_ring_init()
+   
+   ANSWER:
+   Configure Rx buffer descriptor ring:
+   - Set Rx descriptor ring start address
+   - Set max receive buffer size in bytes
+   - Initialize Rx buffer descriptors. For each Rx buffer descriptor d do:
+     + Mark descriptor d as "available for reception"
+     + Enable generation of receive interrupts for descriptor d
+   
+8. The ARP cache only has space for a limited number of entries (16 in our 
+   case). So, if we receive an ARP reply for an IP address that is
+   not in the ARP cache, when the ARP cache is full, we need to overwrite an
+   old entry with a new one. How do we decide what entry to overwrite?
+   
+   Hint: Look at the code function arp_cache_lookup_or_allocate() in
+   networking_layer3_ipv4.c
+   
+   ANSWER:
+   We ovewrite the least recently used entry in the ARP cache. To know which entry
+   is the least recently used entry, we keep a timestamp for each entry. This
+   timestamp is updated every time that a successful lookup is done for that 
+   entry.
